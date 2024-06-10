@@ -3,7 +3,10 @@ from Data_handler import get_data
 import os
 
 def main():
-    # print(get_data())
+    # Download the data
+    print(get_data())
+
+    # Prepare the folder for the figures
     if not os.path.exists("Figures"):
         os.makedirs("Figures")
 

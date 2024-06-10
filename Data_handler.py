@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 # Connect the WRDS database
-# db=wrds.Connection(wrds_username='gbesacier')
-db=wrds.Connection(wrds_username='YOUR_USERNAME_HERE')
+# db = wrds.Connection(wrds_username='gbesacier')
+# db=wrds.Connection(wrds_username='YOUR_USERNAME_HERE')
 
 START_DATE = '1964-01-01'
 END_DATE = '2023-12-31'
@@ -96,6 +96,7 @@ def download_data():
 
 def get_data():
     if not os.path.isfile("Data/data.csv"):
+        db = wrds.Connection(wrds_username='gbesacier')
         return download_data()
     else:
         return clean_semicolumn(pd.read_csv("Data/data.csv"))
