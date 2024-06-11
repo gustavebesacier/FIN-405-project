@@ -1,4 +1,4 @@
-from Data_handler import get_data
+from trash.Data_handler import get_data
 
 import os
 
