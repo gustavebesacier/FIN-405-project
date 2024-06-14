@@ -6,12 +6,10 @@ import pandas as pd
 
 USERNAME = 'gbesacier'
 
-# Connect the WRDS database
-# db = wrds.Connection(wrds_username='gbesacier')
-# db=wrds.Connection(wrds_username='YOUR_USERNAME_HERE')
-
 START_DATE = '1964-01-01'
 END_DATE = '2023-12-31'
+
+RF_COL = 'tmytm'
 
 class Data():
 
@@ -19,11 +17,11 @@ class Data():
         if not os.path.isfile("Data/data.csv"):
             print("Data is being processed from WRDS. The operation can take up to 3 minutes.")
             self.db = wrds.Connection(wrds_username=USERNAME)
-            print("Data has been loaded from WRDS. Only data with more than 36 observations has been kept.")
-            self.data = self.download_data().groupby('permno').filter(lambda permno: len(permno) >= 36)
+            self.data = self.download_data()#.groupby('permno').filter(lambda permno: len(permno) >= 36)
+            print("Data has been loaded from WRD.")
         else:
             print("Data has been loaded from local files. Only data with more than 36 observations has been kept.")
-            self.data =  self.clean_semicolumn(pd.read_csv("Data/data.csv")).groupby('permno').filter(lambda permno: len(permno) >= 36)
+            self.data =  self.clean_semicolumn(pd.read_csv("Data/data.csv", sep = ";"))#.groupby('permno').filter(lambda permno: len(permno) >= 36)
 
         self.__rolling_beta_data = 0
 
@@ -50,8 +48,8 @@ class Data():
         # Compute time varying beta for each stock
         self.data["date"] = pd.to_datetime(self.data["date"], format = "%Y-%m-%d") # set date in the correct format
 
-        self.data["Rm_e"] = self.data["vwretd"] - self.data["tmytm"]
-        self.data["R_e"]  = self.data["ret"] - self.data["tmytm"]
+        self.data["Rm_e"] = self.data["vwretd"] - self.data[RF_COL]
+        self.data["R_e"]  = self.data["ret"] - self.data[RF_COL]
 
         # From PS_5_solution
         cov_nm = self.data.set_index('date').groupby('permno')[['R_e','Rm_e']].rolling(60, min_periods=36).cov()
@@ -70,7 +68,7 @@ class Data():
     
 
     def get_market_return(self):
-        """Get the market return from WRDS"""
+        """Get the market return from WRDS (code from PS4)"""
         query_market = f"""
             SELECT date, vwretd 
             FROM crsp.msi 
@@ -83,7 +81,7 @@ class Data():
 
 
     def get_riskfree_rate(self):
-        """Get the riskfree rate from WRDS"""
+        """Get the riskfree rate from WRDS (code from PS4)"""
         query_tbills = f"""
             SELECT mcaldt, tmytm
             FROM crsp.tfz_mth_rf            
@@ -92,26 +90,40 @@ class Data():
             AND mcaldt <= {END_DATE!r};
             """
         RF = self.db.raw_sql(query_tbills, date_cols=['mcaldt'])
-        RF["tmytm"] = np.exp(RF["tmytm"]/12/100) - 1 # adjust compounding
+        # RF[RF_COL] = np.exp(RF[RF_COL]/12/100) - 1 # adjust compounding
+        RF[RF_COL] = RF[RF_COL]/12/100 # adjust compounding
         RF.to_csv("Data/riskfree_rate.csv")
         return RF
 
 
     def get_stock_returns(self):
-        """Get stock returns for all common stocks of AMEX and NYSE"""
+        """Get stock returns for all common stocks of AMEX and NYSE (code from PS4)"""
 
+        # query_stocks = f"""
+        #     SELECT data.permno, data.date, data.ret, data.shrout, data.prc, mse.siccd, mse.shrcd, mse.exchcd
+        #     FROM crsp.msf AS data
+        #     LEFT JOIN crsp.msenames AS mse
+        #     ON data.permno = mse.permno 
+        #     AND mse.namedt <= data.date
+        #     AND data.date <= mse.nameendt
+        #     WHERE data.date BETWEEN {START_DATE!r} AND {END_DATE!r}
+        #     AND mse.exchcd BETWEEN 1 AND 2
+        #     AND mse.shrcd BETWEEN 10 AND 11;
+        #     """
         query_stocks = f"""
-            SELECT data.permno, data.date, data.ret, data.shrout, data.prc, mse.siccd, mse.shrcd, mse.exchcd
-            FROM crsp.msf AS data
-            LEFT JOIN crsp.msenames AS mse
-            ON data.permno = mse.permno 
-            AND mse.namedt <= data.date
-            AND data.date <= mse.nameendt
-            WHERE data.date BETWEEN {START_DATE!r} AND {END_DATE!r}
-            AND mse.exchcd BETWEEN 1 AND 2
-            AND mse.shrcd BETWEEN 10 AND 11;
-            """
+            SELECT a.permno, a.date, b.shrcd, b.exchcd, a.ret, a.shrout, a.prc
+            FROM crsp.msf AS a
+            LEFT JOIN crsp.msenames AS b
+            ON a.permno = b.permno
+            AND b.namedt<=a.date
+            AND a.date<=b.nameendt
+            where a.date BETWEEN {START_DATE!r} AND {END_DATE!r}
+            AND b.exchcd BETWEEN 1 AND 2
+            AND b.shrcd BETWEEN 10 AND 11;
+        """
         RET = self.db.raw_sql(query_stocks, date_cols=['date'])
+        RET['mcap'] = RET['shrout'] * np.abs(RET['prc'])        # market capitalization
+        RET['mcap_l'] = RET.groupby('permno')['mcap'].shift(1)  # lagged market capitalization
         RET.to_csv("Data/stock_returns.csv")
 
         return RET
@@ -153,7 +165,7 @@ class Data():
         if not os.path.exists("Data"):
             os.makedirs("Data")
         data = self.merge_datasets()
-        data.to_csv("Data/data.csv")
+        data.to_csv("Data/data.csv", sep = ";")
 
         return data
-
+    
