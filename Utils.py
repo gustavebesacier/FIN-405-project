@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
+VERBOSE = False
+SEP = "------------------------"
+
 
 def compute_rolling_betas(data, window_size = 60):
 
@@ -22,12 +25,9 @@ def compute_rolling_betas(data, window_size = 60):
     # Offset the dates of the betas by 1 month (code from PS5)
     betas.date = betas.date + pd.DateOffset(months=1)
 
-    print("BETAS SHAPE:", betas.shape)
-
     # Merge the full data with betas (code from PS5)
     data_betas = pd.merge(data, betas, on=['permno', 'date'], how='left')
 
-    print("DATA BETAS SHAPE:", data_betas.shape)
 
     # Finally, we winsorize the betas (5% and 95%) (code from PS5)
     data_betas['beta'] = data_betas['beta'].clip(data_betas['beta'].quantile(0.05), data_betas['beta'].quantile(0.95))
@@ -35,122 +35,64 @@ def compute_rolling_betas(data, window_size = 60):
     # Drop all nan
     data_betas = data_betas.dropna().copy()
 
-    print("Final shape: ", data_betas.shape)
 
     return data_betas
 
-def bab_prepare_data(data_betas):
-
-    # Create deciles based on Beta value (code from PS5)
-    data_betas["decile"] = data_betas.groupby("date")["beta"].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
-
-    # Compute the value weighted contribution of each stock 
-    data_betas['VW_weight'] = data_betas.groupby(['date', 'decile'])['mcap'].transform(lambda x: x / x.sum())
-    data_betas['VW_ret_contrib'] = data_betas['VW_weight'] * data_betas['ret']
-
-    return data_betas
-
-def bab_equally_weighted_portfolios(data_betas):
-
-    # # Create deciles based on Beta value (code from PS5)
-    # data_betas["EW_monthly_decile"] = data_betas.groupby("date")["beta"].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
-
-    # Equally weighted returns per month, for each decile
-    EW_returns = data_betas.groupby(["date", "decile"]).agg({
-        'ret': 'mean',
+def compute_equal_weight_data(data, col_ret = 'ret', col_decile = 'decile'):
+    """Takes a dataframe as an input, specify the decile column and return columns. It returns a smaller dataframe of the expected return per decile per date based on equally weighted portfolios."""
+    
+    EW_returns = data.groupby(['date', col_decile]).agg({
+        col_ret: 'mean',
         RF_COL: 'first',
-        'decile': 'first',
+        col_decile: 'first',
         'date': 'first'
         }).reset_index(drop=True)
-
-    # print("Equally weighted returns per month, for each decile:")
-    # print(EW_returns.head(5))
-
+    
     return EW_returns
 
-def bab_value_weighted_portfolios(data_betas):
-
-    # data_betas['VW_weight'] = data_betas.groupby(['date', 'EW_monthly_decile'])['mcap'].transform(lambda x: x / x.sum())
-    # data_betas['VW_ret_contrib'] = data_betas['VW_weight'] * data_betas['ret']
-
-    VW_returns = data_betas.groupby(["date", "decile"]).agg({
-        'VW_ret_contrib': 'sum',
+def compute_value_weighted_data(data, col_ret = 'ret', col_decile = 'decile'):
+    VW_returns = data.groupby(["date", col_decile]).agg({
+        col_ret: 'sum',
         RF_COL: 'first',
-        'decile': 'first',
+        col_decile: 'first',
         'date': 'first'
-        }).reset_index(drop=True).rename(columns={'VW_ret_contrib': 'ret'})
-
-    # print("Value weighted returns per month, for each decile:")
-    # print(VW_returns.head(5))
-
+        }).reset_index(drop=True)#.rename(columns={'VW_ret_contrib': 'ret'})
+    
     return VW_returns
 
+def compute_ew_from_legs_data(data, col_ret = 'ret', col_leg = 'leg'):
+    """Returns a dataframe that computes the return of equally weighted portfolios of the legs."""
+    EW_data = data.groupby(['date', col_leg]).agg({
+        col_ret: 'mean', 
+        RF_COL: 'first',
+        col_leg: 'first',
+        }).reset_index()
 
-def bab_get_portfolio_weights(data):
-    """Computes the weights of the Betting-Against-Beta portfolio (code inspired from PS5)."""
-    df = data.copy()
-    df['z'] = df.groupby('date')['beta'].rank()                     # Assign each beta a rank, for each month
-    df['z_mean'] = df.groupby('date')['z'].transform('mean')        # Calculate the monthly mean the rank
-    df['norm'] = np.abs(df['z']- df['z_mean'])                      # Compute abs distance of rank to mean rank
-    df['sum_norm'] = df.groupby('date')['norm'].transform("sum")    # Sum the distance
-    df['k'] = 2 / df['sum_norm']                                    # Compute the k
+    EW_data_piv = EW_data.pivot(index='date', columns=col_leg, values='ret') # Pivot the data
+    EW_data_piv['EW_return'] = EW_data_piv[1] - EW_data_piv[-1] # Compute the return of the EW momentum strategy as being the difference between the two legs
+    EW_data_piv[RF_COL] = EW_data.groupby('date')[RF_COL].first() # Add the risk free rate
+    EW_data_piv = EW_data_piv[['EW_return', RF_COL]]   # Keep only the relevant columns
 
-    # Compute the BAB weights
-    df['wH'] = df['k'] * np.maximum(0, df['z'] - df['z_mean'])
-    df['wL'] = - df['k'] * np.minimum(0, df['z'] - df['z_mean'])
+    return EW_data_piv
 
-    # Drop irrelevant columns
-    df = df.drop(columns=["z_mean", 'z', 'norm', 'sum_norm', 'k'])
+def compute_vw_from_legs_data(data, col_ret = 'ret', col_leg = 'leg', col_mcap = 'mcap'):
+    """Uses a data with legs. Compute the indiviudal contribution of each leg, and returns a dataframe of the perf."""
+    VW_data_mom = data.copy()
 
-    # Compute the weighted betas
-    df['bH'] = df['wH'] * df['beta']
-    df['bL'] = df['wL'] * df['beta']
+    VW_data_mom['VW_wL'] = (VW_data_mom[col_leg] == -1) * VW_data_mom[col_mcap]
+    VW_data_mom['VW_wL_sum'] = VW_data_mom.groupby('date')['VW_wL'].transform('sum')
+    VW_data_mom['VW_wH'] = (VW_data_mom[col_leg] == 1) * VW_data_mom[col_mcap]
+    VW_data_mom['VW_wH_sum'] = VW_data_mom.groupby('date')['VW_wH'].transform('sum')
+    VW_data_mom['VW_wL'] = VW_data_mom['VW_wL'] / VW_data_mom['VW_wL_sum']
+    VW_data_mom['VW_wH'] = VW_data_mom['VW_wH'] / VW_data_mom['VW_wH_sum']
+    VW_data_mom = VW_data_mom.drop(columns=['VW_wL_sum', 'VW_wH_sum'])
+    VW_data_mom['VW_w'] = VW_data_mom['VW_wL'] * VW_data_mom[col_leg] + VW_data_mom['VW_wH'] * VW_data_mom[col_leg]
+    VW_data_mom['VW_ret'] = VW_data_mom['VW_w'] * VW_data_mom[col_ret]
 
-    # Compute the individual excess returns of the portfolios H and L
-    df['rH_e'] = df['wH'] * (df['ret'] - df[RF_COL])
-    df['rL_e'] = df['wL'] * (df['ret'] - df[RF_COL]) # Check that crazy formula bby 😃  (en gros, c'est okay de faire weight * excess return au lieu de faire weight * excess return?)
+    # Create a dataframe that aggregates the returns, at each month and keep the risk free rate
+    VW_data_mom_ = VW_data_mom.groupby(['date']).agg({
+        'VW_ret': 'sum', 
+        RF_COL: 'first',
+        }).reset_index()
     
-    # Compute the return and betas of the two portfolios for each period
-    df_ = df.groupby('date').agg({
-        'rH_e': 'sum',
-        'rL_e': 'sum',
-        'bH': 'sum',
-        'bL': 'sum',
-        'Rm_e': 'first',
-    }).reset_index()
-
-    # Finally create the BAB portfolio return
-    df_['rBAB'] = df_['rL_e'] / df_['bL'] - df_['rH_e'] / df_['bH']
-
-    return df_
-
-def bab_question_b(data_betas, verbose = False):
-
-    EW_returns = bab_equally_weighted_portfolios(data_betas)
-    VW_returns = bab_value_weighted_portfolios(data_betas)
-
-    if verbose: 
-        print("Equally weighted returns per month, for each decile:")
-        print(EW_returns.head(15))
-        print(EW_returns.shape)
-
-        print("Value weighted returns per month, for each decile:")
-        print(VW_returns.head(15))
-        print(VW_returns.shape)
-
-    # Plot the results for the 2 different weightings
-    plot_mean_std_sr(EW_returns, '3b', "EW_returns_BAB")
-    plot_mean_std_sr(VW_returns, '3b', "VW_returns_BAB")
-
-
-def bab_question_cd(data_betas, verbose = False):
-
-    # Create the weights rBAB
-    data_BAB = bab_get_portfolio_weights(data_betas)
-
-    if verbose:
-        print("Data BAB portfolio:")
-        print(data_BAB.head(15))
-        print(data_BAB.shape)
-
-    return data_BAB
+    return VW_data_mom_

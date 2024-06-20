@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from termcolor import colored
+import os
 
 from Data_handler import RF_COL
 from Grapher import plot_mean_std_sr
-from Utils import compute_rolling_betas
+from Utils import compute_rolling_betas, compute_equal_weight_data, compute_value_weighted_data, VERBOSE
 
-VERBOSE = False
+SAVE_TABLES = True
 
 
 def bab_prepare_data(data_betas):
@@ -27,12 +27,14 @@ def bab_equally_weighted_portfolios(data_betas):
     # data_betas["EW_monthly_decile"] = data_betas.groupby("date")["beta"].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
 
     # Equally weighted returns per month, for each decile
-    EW_returns = data_betas.groupby(["date", "decile"]).agg({
-        'ret': 'mean',
-        RF_COL: 'first',
-        'decile': 'first',
-        'date': 'first'
-        }).reset_index(drop=True)
+    # EW_returns = data_betas.groupby(["date", "decile"]).agg({
+    #     'ret': 'mean',
+    #     RF_COL: 'first',
+    #     'decile': 'first',
+    #     'date': 'first'
+    #     }).reset_index(drop=True)
+
+    EW_returns = compute_equal_weight_data(data_betas, col_ret='ret', col_decile='decile')
 
     # print("Equally weighted returns per month, for each decile:")
     # print(EW_returns.head(5))
@@ -44,13 +46,13 @@ def bab_value_weighted_portfolios(data_betas):
     # data_betas['VW_weight'] = data_betas.groupby(['date', 'EW_monthly_decile'])['mcap'].transform(lambda x: x / x.sum())
     # data_betas['VW_ret_contrib'] = data_betas['VW_weight'] * data_betas['ret']
 
-    VW_returns = data_betas.groupby(["date", "decile"]).agg({
-        'VW_ret_contrib': 'sum',
-        RF_COL: 'first',
-        'decile': 'first',
-        'date': 'first'
-        }).reset_index(drop=True).rename(columns={'VW_ret_contrib': 'ret'})
-
+    # VW_returns = data_betas.groupby(["date", "decile"]).agg({
+    #     'VW_ret_contrib': 'sum',
+    #     RF_COL: 'first',
+    #     'decile': 'first',
+    #     'date': 'first'
+    #     }).reset_index(drop=True).rename(columns={'VW_ret_contrib': 'ret'})
+    VW_returns = compute_value_weighted_data(data_betas, col_ret = 'VW_ret_contrib', col_decile = 'decile').rename(columns={'VW_ret_contrib': 'ret'})
     # print("Value weighted returns per month, for each decile:")
     # print(VW_returns.head(5))
 
@@ -100,11 +102,11 @@ def bab_question_b(data_betas, verbose = VERBOSE):
     VW_returns = bab_value_weighted_portfolios(data_betas)
 
     if verbose: 
-        print("Equally weighted returns per month, for each decile:")
+        print("BAB Equally weighted returns per month, for each decile:")
         print(EW_returns.head(15))
         print(EW_returns.shape)
 
-        print("Value weighted returns per month, for each decile:")
+        print("BAB Value weighted returns per month, for each decile:")
         print(VW_returns.head(15))
         print(VW_returns.shape)
 
@@ -126,19 +128,30 @@ def bab_question_cd(data_betas, verbose = VERBOSE):
 
     return data_BAB
 
-def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, verbose = VERBOSE):
+def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, save_tables = True, verbose = VERBOSE):
     """ Run all the part 3, about the Betting-Against-Beta strategy."""
+
+    returns = dict()
+
+    if not os.path.exists("Tables"):
+        os.makedirs("Tables")
 
     if question_a:
         data = compute_rolling_betas(data)
 
     if question_b:
         data = bab_prepare_data(data)
-        EW_returns, VW_returns = bab_question_b(data, verbose = True)
-
+        EW_returns, VW_returns = bab_question_b(data, verbose = verbose)
+        if save_tables:
+            EW_returns.to_csv("Tables/3_BAB_qb_EW_return.csv", sep = ";")
+            VW_returns.to_csv("Tables/3_BAB_qb_VW_return.csv", sep = ";")
+        returns['BAB_qb_EW_returns'] = EW_returns.copy(deep = True)
+        returns['BAB_qb_VW_returns'] = VW_returns.copy(deep = True)
 
     if question_cd:
-        bab_strategy = bab_question_cd(data, verbose = True)
+        bab_strategy = bab_question_cd(data, verbose = verbose)
+        if save_tables:
+            bab_strategy.to_csv("Tables/3_BAB_qcd.csv", sep = ";")
         
         # We compute the rf based on question b) results, as the underlying data is the same
         rf = np.mean(list(map(lambda x: 12*x, VW_returns.groupby('decile')[RF_COL].mean().values.tolist())))
@@ -157,3 +170,9 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, ve
         print(" - Standard deviation: {:.2f}".format(BAB_std))
         print(" - Sharpe ratio: {:.2f}".format(BAB_shr))
         print(" - CAPM alpha: {:.2f}".format(model.params.iloc[0] * 12))
+
+        performances_bab = {'mean': BAB_ret, 'std': BAB_std, 'sharpe': BAB_shr, 'alpha': model.params.iloc[0] * 12, 'rf': rf}
+
+        returns['BAB_qcd_strategy'] = performances_bab
+
+    return returns

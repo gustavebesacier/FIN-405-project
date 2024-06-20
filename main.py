@@ -1,6 +1,9 @@
 from Data_handler import Data, RF_COL
-from Utils import compute_rolling_betas, bab_equally_weighted_portfolios, bab_value_weighted_portfolios, bab_question_b
+# from Utils import compute_rolling_betas, bab_equally_weighted_portfolios, bab_value_weighted_portfolios, bab_question_b
+from Utils import SEP
 from BaB import run_bab_part3
+from Momentum import run_mom_part4
+from IV import run_iv_part5
 
 import os
 
@@ -23,11 +26,19 @@ def main():
 
     # Get views form the data
     print('Shape data:', data.shape)
-    print(data)
-    print(data.columns.tolist())
+    # print(data)
 
-    
-    run_bab_part3(data)
+    # # 1 BAB
+    # print(f"{SEP} Running BaB {SEP}")
+    # returns_BAB = run_bab_part3(data, question_a=True, question_b=True, question_cd=True, save_tables=True, verbose=True)
+
+    # # 2 MOM
+    # print(f"{SEP} Running Mom {SEP}")
+    # returns_MOM = run_mom_part4(data, question_a=True, question_b=True, save_tables=True, verbose=True)
+
+    # 3 IV
+    print(f"{SEP} Running IV {SEP}")
+    returns_IV = run_iv_part5(data, question_a=True, question_b=True, verbose=True)
 
     # Prepare the folder for the figures
     if not os.path.exists("Figures"):
