@@ -1,14 +1,43 @@
-import pandas as pd
-import numpy as np
-import statsmodels.api as sm
-from termcolor import colored
-
 from Data_handler import RF_COL
 from Grapher import plot_mean_std_sr
-from Utils import compute_rolling_betas
 
-VERBOSE = False
+from termcolor import colored
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+
+
+def compute_rolling_betas(data, window_size = 60):
+
+    covariance = data.set_index('date').groupby('permno')[['Rn_e', 'Rm_e']].rolling(window=window_size, min_periods=36).cov()
+    betas = covariance.iloc[1::2,1].droplevel(2) / covariance.iloc[0::2,1].droplevel(2)
+    betas = betas.dropna().reset_index().rename(columns={'Rm_e': 'beta'})
+
+    # Make sure the dates columns are datetime
+    betas.date = pd.to_datetime(betas.date)
+    data.date = pd.to_datetime(data.date)
+
+    # Offset the dates of the betas by 1 month (code from PS5)
+    betas.date = betas.date + pd.DateOffset(months=1)
+
+    print("BETAS SHAPE:", betas.shape)
+
+    # Merge the full data with betas (code from PS5)
+    data_betas = pd.merge(data, betas, on=['permno', 'date'], how='left')
+
+    print("DATA BETAS SHAPE:", data_betas.shape)
+
+    # Finally, we winsorize the betas (5% and 95%) (code from PS5)
+    data_betas['beta'] = data_betas['beta'].clip(data_betas['beta'].quantile(0.05), data_betas['beta'].quantile(0.95))
+
+    # Drop all nan
+    data_betas = data_betas.dropna().copy()
+
+    print("Final shape: ", data_betas.shape)
+
+    return data_betas
 
 def bab_prepare_data(data_betas):
 
@@ -56,6 +85,7 @@ def bab_value_weighted_portfolios(data_betas):
 
     return VW_returns
 
+
 def bab_get_portfolio_weights(data):
     """Computes the weights of the Betting-Against-Beta portfolio (code inspired from PS5)."""
     df = data.copy()
@@ -94,7 +124,7 @@ def bab_get_portfolio_weights(data):
 
     return df_
 
-def bab_question_b(data_betas, verbose = VERBOSE):
+def bab_question_b(data_betas, verbose = False):
 
     EW_returns = bab_equally_weighted_portfolios(data_betas)
     VW_returns = bab_value_weighted_portfolios(data_betas)
@@ -112,9 +142,8 @@ def bab_question_b(data_betas, verbose = VERBOSE):
     plot_mean_std_sr(EW_returns, '3b', "EW_returns_BAB")
     plot_mean_std_sr(VW_returns, '3b', "VW_returns_BAB")
 
-    return EW_returns, VW_returns
 
-def bab_question_cd(data_betas, verbose = VERBOSE):
+def bab_question_cd(data_betas, verbose = False):
 
     # Create the weights rBAB
     data_BAB = bab_get_portfolio_weights(data_betas)
@@ -125,35 +154,3 @@ def bab_question_cd(data_betas, verbose = VERBOSE):
         print(data_BAB.shape)
 
     return data_BAB
-
-def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, verbose = VERBOSE):
-    """ Run all the part 3, about the Betting-Against-Beta strategy."""
-
-    if question_a:
-        data = compute_rolling_betas(data)
-
-    if question_b:
-        data = bab_prepare_data(data)
-        EW_returns, VW_returns = bab_question_b(data, verbose = True)
-
-
-    if question_cd:
-        bab_strategy = bab_question_cd(data, verbose = True)
-        
-        # We compute the rf based on question b) results, as the underlying data is the same
-        rf = np.mean(list(map(lambda x: 12*x, VW_returns.groupby('decile')[RF_COL].mean().values.tolist())))
-
-        # Compute the return, std and Sharpe ratio of the BAB strategy
-        BAB_ret = bab_strategy.rBAB.mean() * 12
-        BAB_std = bab_strategy.rBAB.std() * np.sqrt(12)
-        BAB_shr = (BAB_ret - rf) / BAB_std
-
-        # Compute the CAPM alpha
-        bab_strategy['one'] = 1 # Create the column for the constant
-        model = sm.OLS(bab_strategy['rBAB'], bab_strategy[['one', 'Rm_e']]).fit() # Fit CAPM
-
-        print("\n-----------------------\nBetting-against-beta strategy")
-        print(" - Mean return: {:.2f}".format(BAB_ret))
-        print(" - Standard deviation: {:.2f}".format(BAB_std))
-        print(" - Sharpe ratio: {:.2f}".format(BAB_shr))
-        print(" - CAPM alpha: {:.2f}".format(model.params.iloc[0] * 12))
