@@ -65,7 +65,6 @@ def compute_ew_from_legs_data(data, col_ret = 'ret', col_leg = 'leg'):
     EW_data = data.groupby(['date', col_leg]).agg({
         col_ret: 'mean', 
         RF_COL: 'first',
-        col_leg: 'first',
         }).reset_index()
 
     EW_data_piv = EW_data.pivot(index='date', columns=col_leg, values='ret') # Pivot the data
@@ -93,6 +92,7 @@ def compute_vw_from_legs_data(data, col_ret = 'ret', col_leg = 'leg', col_mcap =
     VW_data_mom_ = VW_data_mom.groupby(['date']).agg({
         'VW_ret': 'sum', 
         RF_COL: 'first',
+        col_leg: 'first'
         }).reset_index()
     
     return VW_data_mom_

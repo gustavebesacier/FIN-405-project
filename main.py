@@ -20,12 +20,12 @@ def main():
     data['Rm_e'] = data['vwretd'] - data[RF_COL]
 
     # Drop the NaN values
-    print('Initial shape of the data:', data.shape)
+    # print('Initial shape of the data:', data.shape)
     data = data.dropna().copy()
-    print('Final shape of the data:', data.shape)
+    # print('Final shape of the data:', data.shape)
 
     # Get views form the data
-    print('Shape data:', data.shape)
+    # print('Shape data:', data.shape)
     # print(data)
 
     # # 1 BAB
@@ -38,7 +38,7 @@ def main():
 
     # 3 IV
     print(f"{SEP} Running IV {SEP}")
-    returns_IV = run_iv_part5(data, question_a=True, question_b=True, verbose=True)
+    returns_IV = run_iv_part5(data, question_a=True, question_b=True, show_plot = False, verbose=True)
 
     # Prepare the folder for the figures
     if not os.path.exists("Figures"):

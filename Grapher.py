@@ -50,6 +50,9 @@ def plot_mean_std_sr(data, question, plot_name, show = True):
 
     plot = plot_from_lists(mean, std, sharpe, plot_color = 'blue')
 
+    if not show:
+         plot.close()
+
     if show:
         plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio ({plot_name})')
         plot.savefig(f"Figures/question_{question}_plot_{plot_name}")
