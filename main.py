@@ -45,7 +45,7 @@ def main():
     # 4 STRAT
     print(f"{SEP} Running STRAT {SEP}")
     returns_STRAT = run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True, question_b=True, show_plot = False, verbose=True)
-
+    print(returns_STRAT)
 
     # 8 Industry Neutral
     #print(f"{SEP} Running Industry Neutral {SEP}")
