@@ -81,8 +81,8 @@ def main():
 
 
     # 8 Industry Neutral
-    #print(f"{SEP} Running Industry Neutral {SEP}")
-    #returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
+    print(f"{SEP} Running Industry Neutral {SEP}")
+    returns_STRAT_IN, data_part8_Qb  = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
 
 
     # print(all_returns.items())
