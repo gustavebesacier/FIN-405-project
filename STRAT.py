@@ -63,9 +63,7 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
 
     # Determining the c constant for each year
     dataSTRAT_EW["date"] = pd.to_datetime(dataSTRAT_EW["date"].astype(int), format='%Y%m')
-    print("test1",dataSTRAT_EW.head())
     dataSTRAT_EW['rSTRATstd'] = dataSTRAT_EW.groupby(dataSTRAT_EW.date.dt.year)['rSTRAT_EW'].transform('std') * np.sqrt(12)
-    print("test2",dataSTRAT_EW.head())
     dataSTRAT_EW = to_YYYYMM(dataSTRAT_EW)
 
     dataSTRAT_EW['C'] = VOL_TARGET / dataSTRAT_EW['rSTRATstd']
@@ -75,9 +73,9 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     retSTRAT_EW, stdSTRAT_EW, srSTRAT_EW = get_mean_std_sharpe_STRAT(dataSTRAT_EW, 'rFUND_EW')
 
     print("STRAT strategy based on equally weighted portfolios") 
-    print(" - Expected return:\t {:.2f}".format(retSTRAT_EW))
-    print(" - Standard deviation:\t {:.2f}".format(stdSTRAT_EW))
-    print(" - Sharpe ratio:\t {:.2f}".format(srSTRAT_EW))
+    print(" - Expected return:\t {:.4f}".format(retSTRAT_EW))
+    print(" - Standard deviation:\t {:.4f}".format(stdSTRAT_EW))
+    print(" - Sharpe ratio:\t {:.4f}".format(srSTRAT_EW))
 
     dataSTRAT_EW.drop(columns=['rSTRAT_EW', 'rSTRATstd', 'C'], axis=1)
 
@@ -103,9 +101,9 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     retSTRAT_RP, stdSTRAT_RP, srSTRAT_RP = get_mean_std_sharpe_STRAT(dataSTRAT_RP, 'rFUND_RP')
 
     print("STRAT strategy based on equally risk parity portfolios") 
-    print(" - Expected return:\t {:.2f}".format(retSTRAT_RP))
-    print(" - Standard deviation:\t {:.2f}".format(stdSTRAT_RP))
-    print(" - Sharpe ratio:\t {:.2f}".format(srSTRAT_RP))
+    print(" - Expected return:\t {:.4f}".format(retSTRAT_RP))
+    print(" - Standard deviation:\t {:.4f}".format(stdSTRAT_RP))
+    print(" - Sharpe ratio:\t {:.4f}".format(srSTRAT_RP))
 
 
     ### MEAN VARIANCE OPTIMAL
@@ -144,7 +142,7 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
 
     retSTRAT_MV, stdSTRAT_MV, srSTRAT_MV = get_mean_std_sharpe_STRAT(dataSTRAT_MV, 'rFUND_MV')
     print("STRAT strategy based on mean-variance optimal combination")
-    print(" - Expected return:\t {:.2f}".format(retSTRAT_MV))
-    print(" - Standard deviation:\t {:.2f}".format(stdSTRAT_MV))
-    print(" - Sharpe ratio:\t {:.2f}".format(srSTRAT_MV))
+    print(" - Expected return:\t {:.4f}".format(retSTRAT_MV))
+    print(" - Standard deviation:\t {:.4f}".format(stdSTRAT_MV))
+    print(" - Sharpe ratio:\t {:.4f}".format(srSTRAT_MV))
     return dataSTRAT_RP
