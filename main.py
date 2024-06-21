@@ -80,7 +80,10 @@ def main():
 
     # 8 Industry Neutral
     print(f"{SEP} Running Industry Neutral {SEP}")
-    returns_STRAT_IN, data_part8_Qb  = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
+    rf_value = data_STRAT_RP[RF_COL].mean()
+    returns_IN, data_IN_return = run_in_part8(data, question_a=True, question_b=True, question_c=True,
+                                              save_tables=False, verbose=True, rf_util=rf_value)
+    #returns_STRAT_IN, data_part8_Qb  = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
 
 
     # print(all_returns.items())

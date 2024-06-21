@@ -85,6 +85,17 @@ def run_in_part8(data, rf_util, question_a=True, question_b=False, question_c= T
             strat_IN_temp[i] = run_strat_part6(data_separated[i], returns_BAB_IN_temp[i], returns_MoM_IN_temp[i], returns_IV_IN_temp[i], question_a=True, question_b=True, show_plot = False, verbose=True)
             returns_STRAT_IN[i] = strat_IN_temp[i]['rFUND_RP']
 
+        TSTAT = []
+        ### GET THE T STATS
+        for i in range(11):
+            ret = returns_STRAT_IN[i].mean()
+            std = returns_STRAT_IN[i].std()
+            n = len(returns_STRAT_IN[i])
+            TSTAT.append(ret/ (std/np.sqrt(n)))
+
+        print("THESE ARE THE T STATS YOU NEED")
+        print(TSTAT)
+        date_util = strat_IN_temp[1]['date'].astype(int)
         date_util = strat_IN_temp[1]['date'].astype(int)
     
     if question_b:

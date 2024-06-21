@@ -1,9 +1,22 @@
 from Utils import compute_rolling_betas, compute_equal_weight_data, compute_value_weighted_data, compute_ew_from_legs_data, compute_vw_from_legs_data, SEP,  VERBOSE, RF_COL
 from Grapher import plot_mean_std_sr, get_mean_std_sharpe, plot_from_lists
-from Momentum import mom_add_legs
 
 import numpy as np
 import pandas as pd
+
+
+def mom_add_legs(data, col_decile='decile'):
+    """Adds the leg for building the stragegy on.
+       Create a column 'leg' that is 1 if the decile is 7, 8 or 9, and -1 if decile is 0, 1, 2"""
+
+    data['leg'] = np.nan
+    data.loc[data[col_decile] <= 2, 'leg'] = -1
+    data.loc[data[col_decile] >= 7, 'leg'] = 1
+
+    # Drop the observations that are in none of the legs
+    data_mom = data.dropna().copy()
+
+    return data_mom
 
 def iv_prepare_data(data):
     
@@ -69,7 +82,7 @@ def iv_question_c_ew_compare_legs_to_strat(data_piv, show_plot = True, verbose =
     print(" - Expected return:\t {:.4f}".format(mean))
     print(" - Standard deviation:\t {:.4f}".format(std))
     print(" - Sharpe ratio:\t {:.4f}".format((mean - rf)/ std))
-    print(" - t-stat:\t\t {:.4f}".format(mean / (std * np.sqrt(len(IV_ew_perf['EW_return'])))))
+    print(" - t-stat:\t\t {:.4f}".format(mean / (std / np.sqrt(len(IV_ew_perf['EW_return'])))))
     
     return IV_ew_perf, performance_iv_ew
 
@@ -103,7 +116,7 @@ def iv_question_c_vw_compare_legs_to_strat(data):
     print(" - Expected return:\t {:.4f}".format(mean))
     print(" - Standard deviation:\t {:.4f}".format(std))
     print(" - Sharpe ratio:\t {:.4f}".format((mean - rf)/ std))
-    print(" - t-stat:\t\t {:.4f}".format(mean / (std * np.sqrt(len(IV_vw_perf['ret'])))))
+    print(" - t-stat:\t\t {:.4f}".format(mean / (std / np.sqrt(len(IV_vw_perf['ret'])))))
 
     return IV_vw_perf, performance_iv_ew, IV_vw_weights
 

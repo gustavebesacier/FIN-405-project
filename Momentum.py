@@ -160,7 +160,7 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
         print(" - Expected return: {:.4f}".format(EW_mom_perf['mean']))
         print(" - Standard deviation:\t {:.4f}".format(EW_mom_perf['std']))
         print(" - Sharpe ratio:\t {:.4f}".format((EW_mom_perf['mean'] - EW_mom_perf['rf'])/ EW_mom_perf['std']))
-        print(" - t-stat:\t\t {:.4f}".format((EW_mom_perf['mean'])/ (EW_mom_perf['std'] * np.sqrt(EW_mom_perf['n']))))
+        print(" - t-stat:\t\t {:.4f}".format((EW_mom_perf['mean'])/ (EW_mom_perf['std'] / np.sqrt(EW_mom_perf['n']))))
         
         # Value Weighted now
         # Compare each leg's performance
@@ -177,7 +177,7 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
         print(" - Expected return:\t {:.4f}".format(VW_mom_perf['mean']))
         print(" - Standard deviation:\t {:.4f}".format(VW_mom_perf['std']))
         print(" - Sharpe ratio:\t {:.4f}".format((VW_mom_perf['mean'] - VW_mom_perf['rf'])/ VW_mom_perf['std']))
-        print(" - t-stat:\t\t {:.4f}".format((VW_mom_perf['mean'])/ (VW_mom_perf['std'] * np.sqrt(VW_mom_perf['n']))))
+        print(" - t-stat:\t\t {:.4f}".format((VW_mom_perf['mean'])/ (VW_mom_perf['std'] / np.sqrt(VW_mom_perf['n']))))
 
 
         if save_tables:
