@@ -13,6 +13,12 @@ def main():
 
     all_returns = dict()
 
+    print(SEP*8, SEP*8, sep='\n')
+
+    # Prepare the folder for the figures
+    if not os.path.exists("Figures"):
+        os.makedirs("Figures")
+
     # Prepare data
     Data_instance = Data()               # create instance of the class Data()
     data = Data_instance.get_data()      # store the data of Data_instance
@@ -51,7 +57,6 @@ def main():
 
     # 3 IV
     print(f"{SEP} Running IV {SEP}")
-    print(f"{SEP} Running IV {SEP}")
     returns_IV = run_iv_part5(data, question_a=True, question_b=True, question_c = True, show_plot = show, verbose=show_verbose)
     all_returns['IV'] = returns_IV
     
@@ -64,12 +69,13 @@ def main():
     #print(f"{SEP} Running Industry Neutral {SEP}")
     #returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
 
-    # Prepare the folder for the figures
-    if not os.path.exists("Figures"):
-        os.makedirs("Figures")
     
-    print(all_returns.items())
-    print(all_returns)
+    # print(all_returns.items())
+    # print(all_returns)
+
+    # return returns_BAB, returns_MOM, returns_IV, data_STRAT_RP
+    
+    return all_returns
 
 if __name__ == "__main__":
     main()
