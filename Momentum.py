@@ -83,7 +83,7 @@ def mom_question_b_ew(data):
 
 def mom_question_b_vw(data, verbose = VERBOSE):
 
-    VW_mom_piv = compute_vw_from_legs_data(data, col_ret='ret', col_leg='leg', col_mcap='mcap')
+    VW_mom_piv, VW_mom_weights = compute_vw_from_legs_data(data, col_ret='ret', col_leg='leg', col_mcap='mcap')
 
     # Compute mean, std and Sharpe ratio
     mean = VW_mom_piv['VW_ret'].mean() * 12
@@ -98,7 +98,7 @@ def mom_question_b_vw(data, verbose = VERBOSE):
 
     performance_mom_vw = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf}
 
-    return VW_mom_piv, performance_mom_vw
+    return VW_mom_piv, performance_mom_vw, VW_mom_weights
 
 
 def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, show_plot = True, verbose = VERBOSE):
@@ -145,7 +145,7 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
             print(" - Standard deviation:\t {:.2f}%".format(EW_mom_perf['std']))
             print(" - Sharpe ratio:\t {:.2f}".format((EW_mom_perf['mean'] - EW_mom_perf['rf'])/ EW_mom_perf['std']))
         
-        VW_mom_piv, VW_mom_perf = mom_question_b_vw(data, verbose = True)
+        VW_mom_piv, VW_mom_perf,  VW_mom_weights = mom_question_b_vw(data, verbose = True)
         
         if verbose:
             print("Momentum strategy based on value weighted portfolios")
@@ -163,6 +163,7 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
 
         returns_qb['MOM_qb_VW_returns'] = VW_mom_piv.copy(deep = True)
         returns_qb['MOM_qb_VW_performance'] = VW_mom_perf
+        returns_qb['MOM_qb_VW_weights'] = VW_mom_weights
 
         returns['MOM_question_b'] = returns_qb
 

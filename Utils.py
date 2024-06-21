@@ -95,4 +95,4 @@ def compute_vw_from_legs_data(data, col_ret = 'ret', col_leg = 'leg', col_mcap =
         col_leg: 'first'
         }).reset_index()
     
-    return VW_data_mom_
+    return VW_data_mom_, VW_data_mom

@@ -33,43 +33,100 @@ def bab_value_weighted_portfolios(data_betas):
 
     return VW_returns
 
-def bab_get_portfolio_weights(data):
-    """Computes the weights of the Betting-Against-Beta portfolio (code inspired from PS5)."""
-    df = data.copy()
-    df['z'] = df.groupby('date')['beta'].rank()                     # Assign each beta a rank, for each month
-    df['z_mean'] = df.groupby('date')['z'].transform('mean')        # Calculate the monthly mean the rank
-    df['norm'] = np.abs(df['z']- df['z_mean'])                      # Compute abs distance of rank to mean rank
-    df['sum_norm'] = df.groupby('date')['norm'].transform("sum")    # Sum the distance
-    df['k'] = 2 / df['sum_norm']                                    # Compute the k
+# def bab_get_portfolio_weights(data):
+#     "Computes the weights of the Betting-Against-Beta portfolio (code inspired from PS5)."
+#     df = data.copy()
+#     df['z'] = df.groupby('date')['beta'].rank()                     # Assign each beta a rank, for each month
+#     df['z_mean'] = df.groupby('date')['z'].transform('mean')        # Calculate the monthly mean the rank
+#     df['norm'] = np.abs(df['z']- df['z_mean'])                      # Compute abs distance of rank to mean rank
+#     df['sum_norm'] = df.groupby('date')['norm'].transform("sum")    # Sum the distance
+#     df['k'] = 2 / df['sum_norm']                                    # Compute the k
 
-    # Compute the BAB weights
-    df['wH'] = df['k'] * np.maximum(0, df['z'] - df['z_mean'])
-    df['wL'] = - df['k'] * np.minimum(0, df['z'] - df['z_mean'])
+#     # Compute the BAB weights
+#     # df['wH'] = df['k'] * np.maximum(0, df['z'] - df['z_mean'])
+#     # df['wL'] = - df['k'] * np.minimum(0, df['z'] - df['z_mean'])
 
-    # Drop irrelevant columns
-    df = df.drop(columns=["z_mean", 'z', 'norm', 'sum_norm', 'k'])
+#     df['wH'] = df['k'] * (df['z']- df['z_mean']) * ((df['z']- df['z_mean'])>0) 
+#     df['wL'] = -df['k'] * (df['z']- df['z_mean']) * ((df['z']- df['z_mean'])<0)
 
-    # Compute the weighted betas
-    df['bH'] = df['wH'] * df['beta']
-    df['bL'] = df['wL'] * df['beta']
 
-    # Compute the individual excess returns of the portfolios H and L
-    df['rH_e'] = df['wH'] * (df['ret'] - df[RF_COL])
-    df['rL_e'] = df['wL'] * (df['ret'] - df[RF_COL]) # Check that crazy formula bby 😃  (en gros, c'est okay de faire weight * excess return au lieu de faire weight * excess return?)
+#     # Drop irrelevant columns
+#     df = df.drop(columns=["z_mean", 'z', 'norm', 'sum_norm', 'k'])
+
+#     # Compute the weighted betas
+#     df['bH'] = df['wH'] * df['beta']
+#     df['bL'] = df['wL'] * df['beta']
+
+#     # Compute individual contribution
+#     df['rH'] = df['wH'] * df['ret']
+#     df['rL'] = df['wL'] * df['ret']
+
+#     # Compute the individual excess returns of the portfolios H and L
+#     df['rH_e'] = df['wH'] * (df['ret'] - df[RF_COL])
+#     df['rL_e'] = df['wL'] * (df['ret'] - df[RF_COL]) # Check that crazy formula bby 😃  (en gros, c'est okay de faire weight * excess return au lieu de faire weight * excess return?)
     
-    # Compute the return and betas of the two portfolios for each period
-    df_ = df.groupby('date').agg({
-        'rH_e': 'sum',
-        'rL_e': 'sum',
-        'bH': 'sum',
-        'bL': 'sum',
+#     # Compute the return and betas of the two portfolios for each period
+#     df_ = df.groupby('date').agg({
+#         'rH_e': 'sum',
+#         'rL_e': 'sum',
+#         'rH': 'sum',
+#         'rL': 'sum',
+#         'bH': 'sum',
+#         'bL': 'sum',
+#         'Rm_e': 'first',
+#     }).reset_index()
+
+#     # Finally create the BAB portfolio return
+#     df_['rBAB'] = df_['rL_e'] / df_['bL'] - df_['rH_e'] / df_['bH']
+#     print("TA MER EN STRING de gueer")
+#     print(df_)
+#     return df_, df[["permno", "date", "wH", "wL"]]
+
+def bab_get_portfolio_weights(data):
+    """Code from PS5"""
+    # Weights
+    data['z'] = data.groupby('date')['beta'].transform(lambda x: x.rank())
+    data['z_'] = data['z']-data.groupby('date')['z'].transform('mean')
+    data['k'] = np.abs(data['z_'])
+    data['k'] = 2/data.groupby('date')['k'].transform('sum')
+    data['w_H'] = data['k'] * data['z_'] * (data['z_']>0) 
+    data['w_L'] = -data['k'] * data['z_'] * (data['z_']<0) 
+
+    # Weighted returns and beta
+    data['beta_H'] = data['w_H'] * data['beta']
+    data['beta_L'] = data['w_L'] * data['beta']
+    data['R_H'] = data['w_H'] * data['ret']
+    data['R_L'] = data['w_L'] * data['ret']
+    data['R_H_e'] = data['w_H'] * data['Rn_e']
+    data['R_L_e'] = data['w_L'] * data['Rn_e']
+    # BAB = data.groupby('date')[['R_H','R_L','R_H_e','R_L_e','beta_H','beta_L', 'Rm_e']].sum().reset_index()
+
+    BAB = data.groupby('date').agg({
+        'R_H': 'sum',
+        'R_L': 'sum',
+        'R_H_e': 'sum',
+        'R_L_e': 'sum',
+        'beta_H': 'sum',
+        'beta_L': 'sum',
         'Rm_e': 'first',
-    }).reset_index()
+        }).reset_index()
+    #     df_ = df.groupby('date').agg({
+#         'rH_e': 'sum',
+#         'rL_e': 'sum',
+#         'rH': 'sum',
+#         'rL': 'sum',
+#         'bH': 'sum',
+#         'bL': 'sum',
+#         'Rm_e': 'first',
+#     }).reset_index()
 
-    # Finally create the BAB portfolio return
-    df_['rBAB'] = df_['rL_e'] / df_['bL'] - df_['rH_e'] / df_['bH']
+    # Levered and unlevered returns
+    BAB['BAB1'] = BAB['R_L'] - BAB['R_H']
+    BAB['rBAB'] = BAB['R_L_e']/BAB['beta_L'] - BAB['R_H_e']/BAB['beta_H']
+    print("oui oui afpiu bwrpg  wiub")
+    print(BAB)
 
-    return df_
+    return BAB, data[["permno", "date", "w_H", "w_L"]]
 
 def bab_question_b(data_betas, verbose = VERBOSE):
 
@@ -94,9 +151,9 @@ def bab_question_b(data_betas, verbose = VERBOSE):
 def bab_question_cd(data_betas, verbose = VERBOSE):
 
     # Create the weights rBAB
-    data_BAB = bab_get_portfolio_weights(data_betas)
+    data_BAB, weights_BAB = bab_get_portfolio_weights(data_betas)
 
-    return data_BAB
+    return data_BAB, weights_BAB
 
 def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, show_plot = True, save_tables = True, verbose = VERBOSE):
     """ Run all the part 3, about the Betting-Against-Beta strategy."""
@@ -135,8 +192,9 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
         
         returns_qc = dict()
 
-        bab_strategy = bab_question_cd(data, verbose = verbose)
+        bab_strategy, weights_BAB = bab_question_cd(data, verbose = verbose)
 
+        returns_qc['BAB_qc_weights'] = weights_BAB.copy(deep = True)
         returns_qc['BAB_qc_strategy_data'] = bab_strategy.copy(deep = True)
 
         if verbose: 
@@ -168,6 +226,7 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
 
         performances_bab = {'mean': BAB_ret, 'std': BAB_std, 'sharpe': BAB_shr, 'alpha': model.params.iloc[0] * 12, 'rf': rf}
         returns_qc['BAB_qc_strategy_perf'] = performances_bab
+        
         
         returns['BAB_question_cd'] = returns_qc
 
