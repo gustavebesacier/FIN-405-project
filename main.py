@@ -1,6 +1,6 @@
 from Data_handler import Data, RF_COL
 # from Utils import compute_rolling_betas, bab_equally_weighted_portfolios, bab_value_weighted_portfolios, bab_question_b
-from Utils import SEP
+from Utils import SEP, to_YYYYMM
 from BaB import run_bab_part3
 from Momentum import run_mom_part4
 from IV import run_iv_part5
@@ -17,7 +17,9 @@ def main():
 
     data.sort_values(by=['permno','date'],inplace=True)
 
-    show = False
+    data = to_YYYYMM(data)
+
+    show = True
     
     # Add excess returns columns
     data['Rn_e'] = data['ret'] - data[RF_COL]

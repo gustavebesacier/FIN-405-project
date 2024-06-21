@@ -109,6 +109,7 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
     if question_a:
         data = compute_rolling_betas(data)
         returns['BAB_question_a_data'] = data.copy(deep = True)
+        print("data is : \n",data.head())
 
     if question_b:
         

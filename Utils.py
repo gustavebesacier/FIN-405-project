@@ -19,8 +19,9 @@ def compute_rolling_betas(data, window_size = 60):
     betas = betas.dropna().reset_index().rename(columns={'Rm_e': 'beta'})
 
     # Make sure the dates columns are datetime
-    betas.date = pd.to_datetime(betas.date)
-    data.date = pd.to_datetime(data.date)
+    #betas.date = pd.to_datetime(betas.date)
+    #data.date = pd.to_datetime(data.date)
+    display(betas)
 
     # Offset the dates of the betas by 1 month (code from PS5)
     betas.date = betas.date + pd.DateOffset(months=1)
@@ -96,3 +97,16 @@ def compute_vw_from_legs_data(data, col_ret = 'ret', col_leg = 'leg', col_mcap =
         }).reset_index()
     
     return VW_data_mom_
+
+def to_YYYYMM(df):
+    df = df.copy()
+
+    # Convert the date column to datetime if it is not already
+    if not pd.api.types.is_datetime64_any_dtype(df['date']):
+        df["date"] = pd.to_datetime(df["date"])
+
+    # Extract the year and month from the date column
+    df["date"] = (df["date"].dt.year * 100 + df["date"].dt.month).astype("int64")
+
+    print(df.head())
+    return df
