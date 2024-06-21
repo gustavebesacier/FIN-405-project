@@ -19,23 +19,21 @@ def compute_rolling_betas(data, window_size = 60):
     betas = betas.dropna().reset_index().rename(columns={'Rm_e': 'beta'})
 
     # Make sure the dates columns are datetime
-    #betas.date = pd.to_datetime(betas.date)
+    betas.date = pd.to_datetime(betas["date"])
+    betas["date"] = pd.to_datetime(betas["date"].astype(int), format='%Y%m')
     #data.date = pd.to_datetime(data.date)
-    display(betas)
 
     # Offset the dates of the betas by 1 month (code from PS5)
     betas.date = betas.date + pd.DateOffset(months=1)
-
+    betas = to_YYYYMM(betas)
     # Merge the full data with betas (code from PS5)
     data_betas = pd.merge(data, betas, on=['permno', 'date'], how='left')
-
 
     # Finally, we winsorize the betas (5% and 95%) (code from PS5)
     data_betas['beta'] = data_betas['beta'].clip(data_betas['beta'].quantile(0.05), data_betas['beta'].quantile(0.95))
 
     # Drop all nan
     data_betas = data_betas.dropna().copy()
-
 
     return data_betas
 
