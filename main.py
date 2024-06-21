@@ -30,7 +30,7 @@ def main():
     data = data[data['N']>60].copy()
 
     show_verbose = True
-    show = False
+    show = True
     
     # Add excess returns columns
     data['Rn_e'] = data['ret'] - data[RF_COL]
@@ -74,7 +74,7 @@ def main():
     # print(all_returns)
 
     # return returns_BAB, returns_MOM, returns_IV, data_STRAT_RP
-    
+
     return all_returns
 
 if __name__ == "__main__":
