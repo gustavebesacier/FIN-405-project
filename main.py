@@ -44,8 +44,8 @@ def main():
     
     # 4 STRAT
     print(f"{SEP} Running STRAT {SEP}")
-    returns_STRAT = run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True, question_b=True, show_plot = False, verbose=True)
-    print(returns_STRAT)
+    data_STRAT_RP = run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True, question_b=True, show_plot = False, verbose=True)
+    ### In data_STRAT_RP, you can fetch: rBABstd, rMOMstd, rIVstd, rSTRAT (the weighted average of the strats), rSTRATstd, rFUND_RP
 
     # 8 Industry Neutral
     #print(f"{SEP} Running Industry Neutral {SEP}")

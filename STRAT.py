@@ -137,4 +137,4 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     print(" - Expected return:\t {:.2f}".format(retSTRAT_MV))
     print(" - Standard deviation:\t {:.2f}".format(stdSTRAT_MV))
     print(" - Sharpe ratio:\t {:.2f}".format(srSTRAT_MV))
-    return dataSTRAT_RP['rFUND_RP']
+    return dataSTRAT_RP
