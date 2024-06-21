@@ -190,7 +190,7 @@ def performance(data, weights_BAB, weights_MOM, weights_IV, dataSTRAT_RP,show):
     #create the full data with weights industries and dummies
     data_for_exposure = data_with_dummies.merge(weights_stocks, on=['permno', 'date'], how='inner')
 
-    colonne = data_for_exposure.columns.drop(["permno","date","ret","shrout","prc","siccd","mcap","mcap_l","tmytm","vwretd","N","Rn_e","Rm_e","class",])
+    colonne = data_for_exposure.columns.drop(["permno","date","ret","shrout","prc","siccd","mcap","mcap_l","tmytm","vwretd","N","Rn_e","Rm_e","class","w_stock"])
 
     # Estimate Factor
     Factors_tstats = data_for_exposure.groupby(['date']).apply(lambda x: sm.OLS(x['Rn_e'], x[colonne]).fit().tvalues)
@@ -237,6 +237,9 @@ def performance(data, weights_BAB, weights_MOM, weights_IV, dataSTRAT_RP,show):
 
     # Compute Hedge Portfolio Return
     Hedge_Return = Factors.mul(Exposures, axis=1).sum(axis=1)
+    print(Hedge_Return)
+    print("exposures",Exposures)
+    print("factors",Factors)
 
     # Compute the industry-hedged STRAT return by subtracting the hedge return from the original STRAT return
     STRAT_returns = data_for_exposure.groupby('date')['beta'].mean()  # Assuming Rn_e is the STRAT return
@@ -246,6 +249,7 @@ def performance(data, weights_BAB, weights_MOM, weights_IV, dataSTRAT_RP,show):
     average_return = STRAT_hedged_return.mean() * 12  # Annualize the mean return
     std_return = STRAT_hedged_return.std() * np.sqrt(12)  # Annualize the standard deviation
     sharpe_ratio = average_return / std_return
+    print(STRAT_hedged_return)
 
     # Print the results
     print('Industry-Hedged STRAT Return: ', average_return)
@@ -260,13 +264,3 @@ def performance(data, weights_BAB, weights_MOM, weights_IV, dataSTRAT_RP,show):
         plt.ylabel('Return')
         plt.savefig('Figures/Industry_Hedged_STRAT_Return', dpi=300)
         plt.show()
-
-    # Hedge Portfolio Return
-
-    #Hedge_Return = Factors * Exposures.rename(columns={'beta_Mkt': 'Rm_e'})
-    #Hedge_Return = Hedge_Return.sum(axis=1)
-
-    #Mom_hedge = Momentum.set_index('date') - Hedge_Return.to_numpy()[:, np.newaxis]
-    #print('Momentum-Hedged Return: ', Mom_hedge.mean() * 12)
-    #print('Momentum-Hedged Std: ', Mom_hedge.std() * np.sqrt(12))
-    #print('Momentum-Hedged Sharpe: ', Mom_hedge.mean() / Mom_hedge.std() * np.sqrt(12))

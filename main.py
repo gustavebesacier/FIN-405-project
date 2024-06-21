@@ -75,14 +75,12 @@ def main():
     weights_BAB = returns_BAB['BAB_question_cd']['BAB_qc_weights']
     weights_MOM = returns_MOM['MOM_question_b']['MOM_qb_VW_weights']
     weights_IV = returns_IV['IV_question_c']['IV_question_c_VW_returns_weights']
-    print(weights_BAB, weights_MOM, weights_IV)
-
-    performance(data, weights_BAB, weights_MOM, weights_IV, data_STRAT_RP, show=False)
+    performance(data, weights_BAB, weights_MOM, weights_IV, data_STRAT_RP, show)
 
 
     # 8 Industry Neutral
-    #print(f"{SEP} Running Industry Neutral {SEP}")
-    #returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
+    print(f"{SEP} Running Industry Neutral {SEP}")
+    returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
 
 
     # print(all_returns.items())
