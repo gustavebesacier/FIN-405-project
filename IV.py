@@ -104,43 +104,43 @@ def iv_question_c_vw_compare_legs_to_strat(data):
 
     return IV_vw_perf, performance_iv_ew, IV_vw_weights
 
-def iv_question_c_ew(data, show_plot = True):
-        # Comparing performance of each leg
-        EW_returns_IV_legs = data.groupby(["date", "leg"]).agg({
-            'date': 'first',
-            'ret': 'mean',
-            RF_COL: 'first',
-            'leg': 'first'
-            }).reset_index(drop=True)
+# def iv_question_c_ew(data, show_plot = True):
+#         # Comparing performance of each leg
+#         EW_returns_IV_legs = data.groupby(["date", "leg"]).agg({
+#             'date': 'first',
+#             'ret': 'mean',
+#             RF_COL: 'first',
+#             'leg': 'first'
+#             }).reset_index(drop=True)
         
-        if show_plot:
-            plot_mean_std_sr(EW_returns_IV_legs.rename(columns={'leg': 'decile'}), '5c', "EW_returns_IV_legs")
-            print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
+#         # if show_plot:
+#         #     plot_mean_std_sr(EW_returns_IV_legs.rename(columns={'leg': 'decile'}), '5c', "EW_returns_IV_legs")
+#         #     print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
 
-        # EW performance of going long the leg 1 and short leg -1
-        EW_iv_piv = compute_ew_from_legs_data(data, col_ret='ret')
+#         # EW performance of going long the leg 1 and short leg -1
+#         EW_iv_piv = compute_ew_from_legs_data(data, col_ret='ret')
 
-        # Compute mean, std and Sharpe ratio
-        mean_EW_IV = EW_iv_piv['EW_return'].mean() * 12
-        std_EW_IV = EW_iv_piv['EW_return'].std() * np.sqrt(12)
-        rf_EW_IV = EW_iv_piv[RF_COL].mean() * 12
-        n = len(EW_iv_piv['EW_return'])
+#         # Compute mean, std and Sharpe ratio
+#         mean_EW_IV = EW_iv_piv['EW_return'].mean() * 12
+#         std_EW_IV = EW_iv_piv['EW_return'].std() * np.sqrt(12)
+#         rf_EW_IV = EW_iv_piv[RF_COL].mean() * 12
+#         n = len(EW_iv_piv['EW_return'])
 
-        # Save the performances of the long-short strategy
-        performance_iv_ew = {'mean': mean_EW_IV, 'std': std_EW_IV, 'sharpe': (mean_EW_IV - rf_EW_IV) / std_EW_IV, 'rf': rf_EW_IV, 'n': n}
+#         # Save the performances of the long-short strategy
+#         performance_iv_ew = {'mean': mean_EW_IV, 'std': std_EW_IV, 'sharpe': (mean_EW_IV - rf_EW_IV) / std_EW_IV, 'rf': rf_EW_IV, 'n': n}
 
-        # Compare the performance from the two legs and the strategy
-        m, v, s = get_mean_std_sharpe(EW_returns_IV_legs.rename(columns={'leg': 'decile'})) # recompute the values of the 2 legs
-        m.append(mean_EW_IV), v.append(std_EW_IV), s.append((mean_EW_IV - rf_EW_IV) / std_EW_IV) # add to the lists the values for the portfolio
-        if show_plot:
-            plot = plot_from_lists(m, v, s, plot_color = 'blue')
-            plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (EW_IV_legs_strat)')
-            plot.savefig(f"Figures/question_5c_plot_EW_IV_legs_strat")
-            plot.show()
-            print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
-        EW_returns_IV_legs
+#         # Compare the performance from the two legs and the strategy
+#         m, v, s = get_mean_std_sharpe(EW_returns_IV_legs.rename(columns={'leg': 'decile'})) # recompute the values of the 2 legs
+#         m.append(mean_EW_IV), v.append(std_EW_IV), s.append((mean_EW_IV - rf_EW_IV) / std_EW_IV) # add to the lists the values for the portfolio
+#         if show_plot:
+#             plot = plot_from_lists(m, v, s, plot_color = 'blue')
+#             plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (EW_IV_legs_strat)')
+#             plot.savefig(f"Figures/question_5c_plot_EW_IV_legs_strat")
+#             plot.show()
+#             print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
+#         # EW_returns_IV_legs
 
-        return EW_iv_piv, performance_iv_ew
+#         return EW_iv_piv, performance_iv_ew, EW_returns_IV_legs
 
 # def iv_question_c_vw(data, verbose = VERBOSE, show_plot = True):
         
@@ -286,49 +286,6 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
 
         # Add the returns to the dict of returns
         returns_iv['IV_question_c'] = returns_question_c#.copy(deep = True)
-        
-
-
-        # # Equally weighted strategy
-        # EW_piv_, EW_piv_perf = iv_question_c_ew(data, show_plot = False) # performances of the long-short strategy
-
-        # # Value weighted strategy
-        # iv_question_c_vw(data, show_plot=True)
-
-        # print(EW_piv_perf)
-
-
-        # print(EW_piv_, EW_piv_perf)
-        # EW_iv_perf = iv_question_c_ew(data, show_plot=show_plot)
-
-        # Comparing performance of each leg
-
-        # EW_returns_IV_legs = data.groupby(["date", "leg"]).agg({
-        #     'date': 'first',
-        #     'ret': 'mean',
-        #     RF_COL: 'first',
-        #     'leg': 'first'
-        #     }).reset_index(drop=True)
-        
-        # plot_mean_std_sr(EW_returns_IV_legs.rename(columns={'leg': 'decile'}), '5c', "EW_returns_IV_legs")
-        # print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
-
-        # # EW performance
-        # EW_iv_piv, EW_iv_perf = iv_question_c_ew(data, verbose = True)
-
-        # # For VW portfolios
-        # VW_iv_piv, VW_iv_perf = iv_question_c_vw(data, verbose = True)
-
-        # # Compare the long-short strategy with each leg's performance
-        # mean, std, sr = get_mean_std_sharpe(EW_returns_IV_legs.rename(columns={'leg': 'decile'}))
-        # mean.append(EW_iv_perf['mean']), std.append(EW_iv_perf['std']), sr.append((EW_iv_perf['mean'] - EW_iv_perf['rf'])/ EW_iv_perf['std'])
-
-        # plot = plot_from_lists(mean, std, sr, plot_color = 'blue')
-
-        # plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (EW_IV_legs_strat)')
-        # plot.savefig(f"Figures/question_5c_plot_EW_IV_legs_strat")
-        # plot.show()
-        # print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
 
 
     return returns_iv
