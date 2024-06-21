@@ -26,7 +26,7 @@ def load_factors(data):
     Industry_weights_12 = pd.DataFrame([x.strip().split(',') for x in table_lines[1:]], columns=table_lines[0].strip().split(','))
 
     # Convert appropriate columns to numeric
-    Industry_weights_12 = Industry_weights_12.apply(pd.to_numeric, errors='ignore')
+    Industry_weights_12 = Industry_weights_12.apply(pd.to_numeric)
     with open("Data/Siccodes12.txt", 'r') as file:
         Industries = file.read()
 

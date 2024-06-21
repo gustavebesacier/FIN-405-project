@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from Data_handler import RF_COL
 from scipy.optimize import minimize
+from Utils import to_YYYYMM
 
 VOL_TARGET = 0.1
 
@@ -61,7 +62,12 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     dataSTRAT_EW['rSTRAT_EW'] = (dataSTRAT_EW['rBAB'] + dataSTRAT_EW['rMOM'] + dataSTRAT_EW['rIV']) / 3
 
     # Determining the c constant for each year
+    dataSTRAT_EW["date"] = pd.to_datetime(dataSTRAT_EW["date"].astype(int), format='%Y%m')
+    print("test1",dataSTRAT_EW.head())
     dataSTRAT_EW['rSTRATstd'] = dataSTRAT_EW.groupby(dataSTRAT_EW.date.dt.year)['rSTRAT_EW'].transform('std') * np.sqrt(12)
+    print("test2",dataSTRAT_EW.head())
+    dataSTRAT_EW = to_YYYYMM(dataSTRAT_EW)
+
     dataSTRAT_EW['C'] = VOL_TARGET / dataSTRAT_EW['rSTRATstd']
     dataSTRAT_EW['rFUND_EW'] = dataSTRAT_EW['C'] * dataSTRAT_EW['rSTRAT_EW'] + dataSTRAT_EW[RF_COL]
 
@@ -88,7 +94,9 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     dataSTRAT_RP['rSTRAT'] = dataSTRAT_RP['rBAB']/dataSTRAT_RP['rBABstd'] + dataSTRAT_RP['rMOM']/dataSTRAT_RP['rMOMstd'] + dataSTRAT_RP['rIV']/dataSTRAT_RP['rIVstd']
 
     # Determining the c constant for each year
+    dataSTRAT_RP["date"] = pd.to_datetime(dataSTRAT_RP["date"].astype(int), format='%Y%m')
     dataSTRAT_RP['rSTRATstd'] = dataSTRAT_RP.groupby(dataSTRAT_RP.date.dt.year)['rSTRAT'].transform('std') * np.sqrt(12)
+    dataSTRAT_RP = to_YYYYMM(dataSTRAT_RP)
     dataSTRAT_RP['C'] = VOL_TARGET / dataSTRAT_RP['rSTRATstd']
     dataSTRAT_RP['rFUND_RP'] = dataSTRAT_RP['C'] * dataSTRAT_RP['rSTRAT'] + dataSTRAT_RP[RF_COL]
 
@@ -128,7 +136,9 @@ def run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True,
     dataSTRAT_MV['rSTRAT_MV'] = portfolio_returns
 
     # Determine the c constant for each year
+    dataSTRAT_MV["date"] = pd.to_datetime(dataSTRAT_MV["date"].astype(int), format='%Y%m')
     dataSTRAT_MV['rSTRATstd'] = dataSTRAT_MV.groupby(dataSTRAT_MV.date.dt.year)['rSTRAT_MV'].transform('std') * np.sqrt(12)
+    dataSTRAT_MV = to_YYYYMM(dataSTRAT_MV)
     dataSTRAT_MV['C'] = 0.1 / dataSTRAT_MV['rSTRATstd']
     dataSTRAT_MV['rFUND_MV'] = dataSTRAT_MV['C'] * dataSTRAT_MV['rSTRAT_MV'] + dataSTRAT_MV[RF_COL]
 

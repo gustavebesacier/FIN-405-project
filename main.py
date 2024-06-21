@@ -31,8 +31,8 @@ def main():
     data['N'] = data.groupby(['permno'])['date'].transform('count')
     data = data[data['N']>60].copy()
 
-    show_verbose = True
-    show = True
+    show_verbose = False
+    show = False
 
     # Add excess returns columns
     data['Rn_e'] = data['ret'] - data[RF_COL]
@@ -67,6 +67,8 @@ def main():
     print(f"{SEP} Running STRAT {SEP}")
     data_STRAT_RP = run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True, question_b=True, show_plot = False, verbose=True)
     ### In data_STRAT_RP, you can fetch: rBABstd, rMOMstd, rIVstd, rSTRAT (the weighted average of the strats), rSTRATstd, rFUND_RP
+
+    # 7 Performance
 
     # 8 Industry Neutral
     print(f"{SEP} Running Industry Neutral {SEP}")

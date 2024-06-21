@@ -6,21 +6,22 @@ import numpy as np
 
 def mom_prepare_data(data_mom):
     """Adds the rolling return column to the data, and create the deciles."""
-    
+    df = data_mom.copy()
+
     # Sort data by permno, then date
-    data_mom.sort_values(by=['permno', 'date'], inplace=True)
+    df.sort_values(by=['permno', 'date'], inplace=True)
 
     # Add a column for momentum return (last 12 months, excluding last month)
-    data_mom['roll_ret'] = data_mom.groupby('permno').ret.transform(lambda x: x.rolling(11, closed='left').sum())
+    df['roll_ret'] = df.groupby('permno').ret.transform(lambda x: x.rolling(11, closed='left').sum())
 
     # Create deciles for the momentum returns
-    data_mom['decile'] = data_mom.groupby('date')['roll_ret'].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
+    df['decile'] = df.groupby('date')['roll_ret'].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
 
     # Value weighted returns per month, for each decile
-    data_mom['VW_weight'] = data_mom.groupby(['date', 'decile'])['mcap'].transform(lambda x: x / x.sum())
-    data_mom['VW_ret_contrib'] = data_mom['VW_weight'] * data_mom['ret']
+    df['VW_weight'] = df.groupby(['date', 'decile'])['mcap'].transform(lambda x: x / x.sum())
+    df['VW_ret_contrib'] = df['VW_weight'] * df['ret']
 
-    return data_mom
+    return df
 
 def mom_equally_weighted_portfolios(data):
     """Returns the equally weighted returns per month, for each decile."""
@@ -106,7 +107,7 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
 
     returns = dict()
 
-    data = mom_prepare_data(data).copy()
+    data = mom_prepare_data(data)
 
     returns['MOM_question_0_data'] = data.copy(deep = True)
 
