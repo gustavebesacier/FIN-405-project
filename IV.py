@@ -62,17 +62,14 @@ def iv_question_c_ew_compare_legs_to_strat(data_piv, show_plot = True, verbose =
     std = IV_ew_perf['EW_return'].std() * np.sqrt(12)
     rf = IV_ew_perf[RF_COL].mean() * 12
 
-    if verbose:
-        print("IV strategy based on equally weighted portfolios")
-        print(" - Expected return:\t {:.2f}%".format(mean))
-        print(" - Standard deviation:\t {:.2f}%".format(std))
-        print(" - Sharpe ratio:\t {:.2f}".format((mean - rf)/ std))
-
     performance_iv_ew = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf, 'n': len(IV_ew_perf['EW_return'])}
 
-    if show_plot:
-        # Plot the comparison of the performance of the strategy against the performance of the legs
-        pass
+    # if verbose:
+    print("IV strategy based on equally weighted portfolios")
+    print(" - Expected return:\t {:.4f}".format(mean))
+    print(" - Standard deviation:\t {:.4f}".format(std))
+    print(" - Sharpe ratio:\t {:.4f}".format((mean - rf)/ std))
+    print(" - t-stat:\t\t {:.4f}".format(mean / (std * np.sqrt(len(IV_ew_perf['EW_return'])))))
     
     return IV_ew_perf, performance_iv_ew
 
@@ -102,76 +99,14 @@ def iv_question_c_vw_compare_legs_to_strat(data):
 
     performance_iv_ew = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf, 'n': len(IV_vw_perf['ret'])}
 
+    print("IV strategy based on value weighted portfolios")
+    print(" - Expected return:\t {:.4f}".format(mean))
+    print(" - Standard deviation:\t {:.4f}".format(std))
+    print(" - Sharpe ratio:\t {:.4f}".format((mean - rf)/ std))
+    print(" - t-stat:\t\t {:.4f}".format(mean / (std * np.sqrt(len(IV_vw_perf['ret'])))))
+
     return IV_vw_perf, performance_iv_ew, IV_vw_weights
 
-# def iv_question_c_ew(data, show_plot = True):
-#         # Comparing performance of each leg
-#         EW_returns_IV_legs = data.groupby(["date", "leg"]).agg({
-#             'date': 'first',
-#             'ret': 'mean',
-#             RF_COL: 'first',
-#             'leg': 'first'
-#             }).reset_index(drop=True)
-        
-#         # if show_plot:
-#         #     plot_mean_std_sr(EW_returns_IV_legs.rename(columns={'leg': 'decile'}), '5c', "EW_returns_IV_legs")
-#         #     print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
-
-#         # EW performance of going long the leg 1 and short leg -1
-#         EW_iv_piv = compute_ew_from_legs_data(data, col_ret='ret')
-
-#         # Compute mean, std and Sharpe ratio
-#         mean_EW_IV = EW_iv_piv['EW_return'].mean() * 12
-#         std_EW_IV = EW_iv_piv['EW_return'].std() * np.sqrt(12)
-#         rf_EW_IV = EW_iv_piv[RF_COL].mean() * 12
-#         n = len(EW_iv_piv['EW_return'])
-
-#         # Save the performances of the long-short strategy
-#         performance_iv_ew = {'mean': mean_EW_IV, 'std': std_EW_IV, 'sharpe': (mean_EW_IV - rf_EW_IV) / std_EW_IV, 'rf': rf_EW_IV, 'n': n}
-
-#         # Compare the performance from the two legs and the strategy
-#         m, v, s = get_mean_std_sharpe(EW_returns_IV_legs.rename(columns={'leg': 'decile'})) # recompute the values of the 2 legs
-#         m.append(mean_EW_IV), v.append(std_EW_IV), s.append((mean_EW_IV - rf_EW_IV) / std_EW_IV) # add to the lists the values for the portfolio
-#         if show_plot:
-#             plot = plot_from_lists(m, v, s, plot_color = 'blue')
-#             plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (EW_IV_legs_strat)')
-#             plot.savefig(f"Figures/question_5c_plot_EW_IV_legs_strat")
-#             plot.show()
-#             print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
-#         # EW_returns_IV_legs
-
-#         return EW_iv_piv, performance_iv_ew, EW_returns_IV_legs
-
-# def iv_question_c_vw(data, verbose = VERBOSE, show_plot = True):
-        
-#         VW_iv_piv = compute_vw_from_legs_data(data, col_ret='ret', col_leg='leg', col_mcap='mcap')
-
-#         if show_plot:
-#              plot_mean_std_sr(VW_iv_piv.rename(columns={'leg': 'decile', 'VW_ret':'ret'}), '5c', "VW_returns_IV_legs")
-#              print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
-
-#         # Compute mean, std and Sharpe ratio
-#         mean_VW_IV = VW_iv_piv['VW_ret'].mean() * 12
-#         std_VW_IV = VW_iv_piv['VW_ret'].std() * np.sqrt(12)
-#         rf_VW_IV = VW_iv_piv[RF_COL].mean() * 12
-        
-#         if verbose:
-#             print("IV strategy based on value weighted portfolios")
-#             print(" - Expected return:\t {:.2f}".format(mean_VW_IV))
-#             print(" - Standard deviation:\t {:.2f}".format(std_VW_IV))
-#             print(" - Sharpe ratio:\t {:.2f}".format((mean_VW_IV - rf_VW_IV)/ std_VW_IV))
-
-#         mean, std, sr = get_mean_std_sharpe(VW_iv_piv.rename(columns={'leg': 'decile', 'VW_ret':'ret'}))
-#         mean.append(mean_VW_IV), std.append(std_VW_IV), sr.append((mean_VW_IV - rf_VW_IV)/ std_VW_IV)
-
-#         if show_plot:
-#             plot = plot_from_lists(mean, std, sr, plot_color = 'blue')
-#             plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (VW_IV_legs_strat)')
-#             plot.savefig(f"Figures/question_5c_plot_VW_IV_legs_strat")
-#             plot.show()
-#             print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy") 
-        
-#         return
 
 def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show_plot = True, verbose=VERBOSE):
     """ Run all the part 5, about the Idiosyncratic volatility strategy."""
@@ -186,7 +121,8 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         data = iv_compute_idio_vol(data).copy()
 
         if verbose:
-            print(data.head(15))
+            print("Data of the IV strategy:")
+            print(data.head(5))
             print(data.shape)
 
         returns_iv['IV_question_a'] = data.copy(deep = True)
@@ -241,7 +177,7 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         # >>> performance_iv_ew = {'mean': 0.14420259964496035, 'std': 0.15926215094897586, 'sharpe': 0.6502576906002339, 'rf': 0.040641161168853454, 'n': 211}
         if verbose:
             print("Data and performance of the IV strategy using EW portoflios.")
-            print(IV_ew_perf)
+            # print(IV_ew_perf)
             print(performance_iv_ew)
         returns_question_c['IV_question_c_EW_long_short_data'] = IV_ew_perf.copy(deep = True)
         returns_question_c['IV_question_c_EW_long_short_perf'] = performance_iv_ew#.copy(deep = True)
@@ -272,7 +208,7 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
 
         if verbose:
             print("Data and performance of the IV strategy using EW portoflios.")
-            print(IV_vw_perf)
+            # print(IV_vw_perf)
             print(performance_iv_vw)
 
         if show_plot:

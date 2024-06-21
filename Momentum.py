@@ -1,5 +1,6 @@
 from Utils import compute_equal_weight_data, compute_value_weighted_data, compute_ew_from_legs_data, compute_vw_from_legs_data, VERBOSE, RF_COL, SEP
-from Grapher import plot_mean_std_sr
+from Grapher import plot_mean_std_sr, get_mean_std_sharpe, plot_from_lists
+from IV import iv_question_c_ew_compare_legs, iv_question_c_vw_compare_legs
 
 import pandas as pd
 import numpy as np
@@ -78,7 +79,7 @@ def mom_question_b_ew(data):
     std = EW_mom_piv['EW_return'].std() * np.sqrt(12)
     rf = EW_mom_piv[RF_COL].mean() * 12
 
-    performance_mom_ew = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf}
+    performance_mom_ew = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf, 'n':len(EW_mom_piv)}
 
     return EW_mom_piv, performance_mom_ew
 
@@ -93,11 +94,11 @@ def mom_question_b_vw(data, verbose = VERBOSE):
 
     # if verbose:
     #     print("Momentum strategy based on value weighted portfolios")
-    #     print(" - Expected return:\t {:.2f}%".format(mean))
-    #     print(" - Standard deviation:\t {:.2f}%".format(std))
-    #     print(" - Sharpe ratio:\t {:.2f}".format((mean - rf)/ std))
+    #     print(" - Expected return:\t :.4f".format(mean))
+    #     print(" - Standard deviation:\t :.4f".format(std))
+    #     print(" - Sharpe ratio:\t {:.4f}".format((mean - rf)/ std))
 
-    performance_mom_vw = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf}
+    performance_mom_vw = {'mean': mean, 'std': std, 'sharpe': (mean - rf) / std, 'rf': rf, 'n': len(VW_mom_piv)}
 
     return VW_mom_piv, performance_mom_vw, VW_mom_weights
 
@@ -137,22 +138,47 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
 
         print(f"{SEP}\nQuestion b")
         data = mom_add_legs(data)
+        
+        # Data EW for each leg
+        EW_mom_piv_leg = iv_question_c_ew_compare_legs(data)
+        mean, std, sr = get_mean_std_sharpe(EW_mom_piv_leg.rename(columns={'leg': 'decile'}))
 
         EW_mom_piv, EW_mom_perf = mom_question_b_ew(data)
+
+        mean, std, sr = get_mean_std_sharpe(EW_mom_piv_leg.rename(columns={'leg': 'decile'}))
         
-        if verbose:
-            print("Momentum strategy based on equally weighted portfolios")
-            print(" - Expected return:\t {:.2f}%".format(EW_mom_perf['mean']))
-            print(" - Standard deviation:\t {:.2f}%".format(EW_mom_perf['std']))
-            print(" - Sharpe ratio:\t {:.2f}".format((EW_mom_perf['mean'] - EW_mom_perf['rf'])/ EW_mom_perf['std']))
+        if show_plot: # Plot the comparison for the two legs
+            plot = plot_from_lists(mean, std, sr, plot_color = 'blue')
+            plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (EW_mom_legs_strat)')
+            plot.savefig(f"Figures/question_4b_plot_EW_MOM_legs_strat")
+            plot.show()
+            print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
+
+        
+        # if verbose:
+        print("Momentum strategy based on equally weighted portfolios")
+        print(" - Expected return: {:.4f}".format(EW_mom_perf['mean']))
+        print(" - Standard deviation:\t {:.4f}".format(EW_mom_perf['std']))
+        print(" - Sharpe ratio:\t {:.4f}".format((EW_mom_perf['mean'] - EW_mom_perf['rf'])/ EW_mom_perf['std']))
+        print(" - t-stat:\t\t {:.4f}".format((EW_mom_perf['mean'])/ (EW_mom_perf['std'] * np.sqrt(EW_mom_perf['n']))))
+        
+        # Value Weighted now
+        # Compare each leg's performance
+        VW_mom_piv_leg, _ = iv_question_c_vw_compare_legs(data)
+        
+        if show_plot:
+            plot_mean_std_sr(VW_mom_piv_leg.rename(columns={'leg': 'decile', 'VW_ret':'ret'}), '5c', "VW_returns_IV_legs")
+            print("In the graph, leg '-1' corresponds to bar '0'; leg '1' is bar '1'.")
         
         VW_mom_piv, VW_mom_perf,  VW_mom_weights = mom_question_b_vw(data, verbose = True)
-        
-        if verbose:
-            print("Momentum strategy based on value weighted portfolios")
-            print(" - Expected return:\t {:.2f}%".format(VW_mom_perf['mean']))
-            print(" - Standard deviation:\t {:.2f}%".format(VW_mom_perf['std']))
-            print(" - Sharpe ratio:\t {:.2f}".format((VW_mom_perf['mean'] - VW_mom_perf['rf'])/ VW_mom_perf['std']))
+
+        # if verbose:
+        print("Momentum strategy based on value weighted portfolios")
+        print(" - Expected return:\t {:.4f}".format(VW_mom_perf['mean']))
+        print(" - Standard deviation:\t {:.4f}".format(VW_mom_perf['std']))
+        print(" - Sharpe ratio:\t {:.4f}".format((VW_mom_perf['mean'] - VW_mom_perf['rf'])/ VW_mom_perf['std']))
+        print(" - t-stat:\t\t {:.4f}".format((VW_mom_perf['mean'])/ (VW_mom_perf['std'] * np.sqrt(VW_mom_perf['n']))))
+
 
         if save_tables:
             EW_mom_piv.to_csv("Tables/4_MOM_qb_EW_return.csv", sep = ";")
@@ -167,5 +193,6 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
         returns_qb['MOM_qb_VW_weights'] = VW_mom_weights
 
         returns['MOM_question_b'] = returns_qb
+
 
     return returns

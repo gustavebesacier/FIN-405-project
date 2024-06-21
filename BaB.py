@@ -123,8 +123,6 @@ def bab_get_portfolio_weights(data):
     # Levered and unlevered returns
     BAB['BAB1'] = BAB['R_L'] - BAB['R_H']
     BAB['rBAB'] = BAB['R_L_e']/BAB['beta_L'] - BAB['R_H_e']/BAB['beta_H']
-    print("oui oui afpiu bwrpg  wiub")
-    print(BAB)
 
     return BAB, data[["permno", "date", "w_H", "w_L"]]
 
@@ -166,7 +164,8 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
     if question_a:
         data = compute_rolling_betas(data)
         returns['BAB_question_a_data'] = data.copy(deep = True)
-        print("data is : \n",data.head())
+        if verbose:
+            print("data is : \n",data.head())
 
     if question_b:
         
@@ -198,10 +197,10 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
         returns_qc['BAB_qc_weights'] = weights_BAB.copy(deep = True)
         returns_qc['BAB_qc_strategy_data'] = bab_strategy.copy(deep = True)
 
-        if verbose: 
-            print("Data BAB portfolio:")
-            print(bab_strategy.head(15))
-            print(bab_strategy.shape)
+        # if verbose: 
+        #     print("Data BAB portfolio:")
+        #     print(bab_strategy.head(15))
+        #     print(bab_strategy.shape)
 
         if save_tables:
             bab_strategy.to_csv("Tables/3_BAB_qcd.csv", sep = ";")
@@ -218,12 +217,12 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sh
         bab_strategy['one'] = 1 # Create the column for the constant
         model = sm.OLS(bab_strategy['rBAB'], bab_strategy[['one', 'Rm_e']]).fit() # Fit CAPM
 
-        if verbose: 
-            print("\n-----------------------\nBetting-against-beta strategy")
-            print(" - Mean return: {:.2f}".format(BAB_ret))
-            print(" - Standard deviation: {:.2f}".format(BAB_std))
-            print(" - Sharpe ratio: {:.2f}".format(BAB_shr))
-            print(" - CAPM alpha: {:.2f}".format(model.params.iloc[0] * 12))
+        # if verbose: 
+        print("\n-----------------------\nBetting-against-beta strategy")
+        print(" - Mean return: {:.4f}".format(BAB_ret))
+        print(" - Standard deviation: {:.4f}".format(BAB_std))
+        print(" - Sharpe ratio: {:.4f}".format(BAB_shr))
+        print(" - CAPM alpha: {:.4f}".format(model.params.iloc[0] * 12))
 
         performances_bab = {'mean': BAB_ret, 'std': BAB_std, 'sharpe': BAB_shr, 'alpha': model.params.iloc[0] * 12, 'rf': rf}
         returns_qc['BAB_qc_strategy_perf'] = performances_bab
