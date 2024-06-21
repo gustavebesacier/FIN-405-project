@@ -82,6 +82,8 @@ def mom_question_a(data, verbose = False, verbose_plus = VERBOSE):
 def mom_question_b_ew(data, verbose = VERBOSE):
     
     # First, focus on the EW part
+    print("IMPPUTE MOM")
+    print(data)
     EW_mom_piv = compute_ew_from_legs_data(data, col_leg='leg', col_ret='ret')
 
     # Compute mean, std and Sharpe ratio
@@ -140,10 +142,18 @@ def run_mom_part4(data, question_a=True, question_b = True, save_tables = True, 
     if question_b:
         print(f"{SEP}\nQuestion b")
         data = mom_add_legs(data)
+        
+        print("Raw data mom")
+        print(data)
 
         EW_mom_piv, EW_mom_perf = mom_question_b_ew(data, verbose = True)
+        print("MOMENTUMMMMMMMMMM EQUALLY WEIGHTED")
+        print(EW_mom_piv)
         VW_mom_piv, VW_mom_perf = mom_question_b_vw(data, verbose = True)
-        
+        print("MOMENTUMMMMMMMMMM VALUE WEIGHTED")
+        print(VW_mom_piv)
+
+
         if save_tables:
             EW_mom_piv.to_csv("Tables/4_MOM_qb_EW_return.csv", sep = ";")
             VW_mom_piv.to_csv("Tables/4_MOM_qb_VW_return.csv", sep = ";")

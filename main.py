@@ -33,12 +33,12 @@ def main():
     # returns_BAB = run_bab_part3(data, question_a=True, question_b=True, question_cd=True, save_tables=True, verbose=True)
 
     # # 2 MOM
-    # print(f"{SEP} Running Mom {SEP}")
+    print(f"{SEP} Running Mom {SEP}")
     # returns_MOM = run_mom_part4(data, question_a=True, question_b=True, save_tables=True, verbose=True)
 
     # 3 IV
-    print(f"{SEP} Running IV {SEP}")
-    returns_IV = run_iv_part5(data, question_a=True, question_b=True, show_plot = False, verbose=True)
+    # print(f"{SEP} Running IV {SEP}")
+    returns_IV = run_iv_part5(data, question_a=True, question_b=False, question_c = True, show_plot = False, verbose=True)
 
     # Prepare the folder for the figures
     if not os.path.exists("Figures"):
