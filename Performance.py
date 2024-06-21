@@ -1,5 +1,9 @@
 import re
 import pandas as pd
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+import numpy as np
+from Utils import compute_rolling_betas
 
 def load_factors(data):
     #We need to load the data from the 12 industry portfolio return and the Fama/French 5 factors
@@ -84,7 +88,7 @@ def format_factors(dataSTRAT_RP,Industry_weights_12, famafrench):
     RP_strategy_ret = dataSTRAT_RP[["date", "rFUND_RP"]]
 
     # Extract the year and month from the date column
-    RP_strategy_ret["date"] = (RP_strategy_ret["date"].dt.year * 100 + RP_strategy_ret["date"].dt.month).astype("int64")
+    #RP_strategy_ret["date"] = (RP_strategy_ret["date"].dt.year * 100 + RP_strategy_ret["date"].dt.month).astype("int64")
 
     print(RP_strategy_ret.head())
 
@@ -120,18 +124,15 @@ def run_regression(RP_strategy_ret, Industry_weights_12, famafrench):
     regression_factors = tmp.columns.drop(["date", "rFUND_RP"])
 
     # Industry Exposure
-    import statsmodels.api as sm
     RegOLS = sm.OLS(tmp["rFUND_RP"], tmp[regression_factors]).fit()
-    print(colored(
-        "Regression coefficients and t-values for the regression on the 12 industries returns and the fama/french 5 factors",
-        attrs=['underline', 'bold']))
+    print("Regression coefficients and t-values for the regression on the 12 industries returns and the fama/french 5 factors")
     print(pd.concat([RegOLS.params, RegOLS.tvalues], axis=1))
-    print(colored("r-squared of the regression", attrs=['underline', 'bold']))
+    print("r-squared of the regression")
     print(RegOLS.rsquared)
 
     return None
 
-def Performance(data):
+def performance(data, weights_BAB, weights_MOM, weights_IV, dataSTRAT_RP,show):
     print("Question 7a\n")
     famafrench, Industry_weights_12, data = load_factors(data)
     #formatted for merging and regression
@@ -140,3 +141,132 @@ def Performance(data):
     run_regression(RP_strategy_ret, Industry_weights_12, famafrench)
 
     print("Question 7b\n")
+    # Calculate weights_BAB net weight (wL - wH)
+    weights_BAB['w_BAB'] = weights_BAB["w_L"] - weights_BAB['w_H']
+
+    # Rename the 'VW_w' columns
+    weights_MOM.rename(columns={'VW_w': 'w_MOM'}, inplace=True)
+    weights_IV.rename(columns={'VW_w': 'w_IV'}, inplace=True)
+
+    # Merge weights_BAB, weights_MOM, weights_IV on permno and date
+    merged_weights = weights_BAB[['permno', 'date', 'w_BAB']].merge(
+        weights_MOM[['permno', 'date', 'w_MOM']], on=['permno', 'date'], how='inner'
+    ).merge(
+        weights_IV[['permno', 'date', 'w_IV']], on=['permno', 'date'], how='inner'
+    )
+    #merged_weights.dropna(inplace = True)
+
+    print(merged_weights)
+
+    weights_STRAT = dataSTRAT_RP[["date", 'rBABstd', 'rMOMstd', 'rIVstd']]
+
+    # Merge with weights_STRAT on date
+    final_weights = merged_weights.merge(weights_STRAT, on='date', how='inner')
+
+    # Calculate the weight for each stock and date
+    final_weights['w_stock'] = (final_weights['w_BAB'] / final_weights['rBABstd']) + \
+                               (final_weights['w_MOM'] / final_weights['rMOMstd']) + \
+                               (final_weights['w_IV'] / final_weights['rIVstd'])
+
+    weights_stocks = final_weights[['permno', 'date', 'w_stock']]
+
+    # Display the final data
+    print(weights_stocks)
+    data_betas = compute_rolling_betas(data, window_size=36)
+    data_betas.dropna(inplace=True)
+    weights_stocks_betas = weights_stocks.merge(data_betas[['permno', 'date', 'beta']], on=['permno', 'date'], how='inner')
+
+
+    # Count total number of NaNs in the DataFrame
+    total_nans = weights_stocks_betas.isna().sum().sum()
+    print(f'Total NaNs in the DataFrame: {total_nans}')
+
+    # Generate dummy variables for the classes
+    dummies = pd.get_dummies(data_betas['class'], prefix='class').astype(int)
+
+    # Concatenate the original DataFrame with the dummy variables
+    data_with_dummies = pd.concat([data_betas, dummies], axis=1)
+
+    #create the full data with weights industries and dummies
+    data_for_exposure = data_with_dummies.merge(weights_stocks, on=['permno', 'date'], how='inner')
+
+    colonne = data_for_exposure.columns.drop(["permno","date","ret","shrout","prc","siccd","mcap","mcap_l","tmytm","vwretd","N","Rn_e","Rm_e","class",])
+
+    # Estimate Factor
+    Factors_tstats = data_for_exposure.groupby(['date']).apply(lambda x: sm.OLS(x['Rn_e'], x[colonne]).fit().tvalues)
+
+    # Plot T-stats
+    Factors_tstats.plot(), plt.title('T-stats Factors')
+    if show:
+        plt.savefig('Figures/T_stats_Factors', dpi=300)
+        plt.show()
+
+    Factors = data_for_exposure.groupby(['date']).apply(lambda x: sm.OLS(x['Rn_e'], x[colonne]).fit().params)
+
+
+    Factors.plot(), plt.title('Time-Series of Factor Returns')
+
+    if show:
+        plt.savefig('Figures/TS_Factors', dpi=300)
+        plt.show()
+
+    print(pd.concat([Factors_tstats.mean(), np.abs(Factors_tstats).mean()], axis=1))
+
+    colonne = data_for_exposure.columns.drop(
+        ["permno", "ret", "shrout", "prc", "siccd", "mcap", "mcap_l", "tmytm", "vwretd", "N", "Rn_e", "Rm_e",
+         "class"])
+
+    Industries = ['class_1', 'class_2', 'class_3', 'class_4', 'class_5', 'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12']
+
+    Exposures = data_for_exposure[colonne].copy()
+    print(Exposures.columns)
+    Exposures[Industries] = Exposures[Industries] * Exposures['w_stock'].to_numpy()[:, np.newaxis]
+    Exposures['beta'] = Exposures['w_stock'] * Exposures['beta']
+    Exposures = Exposures.groupby('date')[['beta'] + Industries].sum()
+
+    # Plot Exposure to Tech and Finance
+    plt.plot(Exposures['class_3'].rolling(36).mean())
+    plt.plot(Exposures['class_6'].rolling(36).mean())
+    plt.plot(Exposures['class_12'].rolling(36).mean())
+    plt.legend(['Manufacturing', "Chems", "Others"])
+    if show:
+        plt.savefig('Figures/Industries_3', dpi=300)
+        plt.show()
+
+    print("Question 7c\n")
+
+    # Compute Hedge Portfolio Return
+    Hedge_Return = Factors.mul(Exposures, axis=1).sum(axis=1)
+
+    # Compute the industry-hedged STRAT return by subtracting the hedge return from the original STRAT return
+    STRAT_returns = data_for_exposure.groupby('date')['beta'].mean()  # Assuming Rn_e is the STRAT return
+    STRAT_hedged_return = STRAT_returns - Hedge_Return
+
+    # Calculate average return, standard deviation, and Sharpe ratio of the industry-hedged STRAT return
+    average_return = STRAT_hedged_return.mean() * 12  # Annualize the mean return
+    std_return = STRAT_hedged_return.std() * np.sqrt(12)  # Annualize the standard deviation
+    sharpe_ratio = average_return / std_return
+
+    # Print the results
+    print('Industry-Hedged STRAT Return: ', average_return)
+    print('Industry-Hedged STRAT Std: ', std_return)
+    print('Industry-Hedged STRAT Sharpe: ', sharpe_ratio)
+
+    # Optionally, you can plot the hedged return time series
+    if show:
+        STRAT_hedged_return.plot()
+        plt.title('Industry-Hedged STRAT Return')
+        plt.xlabel('Date')
+        plt.ylabel('Return')
+        plt.savefig('Figures/Industry_Hedged_STRAT_Return', dpi=300)
+        plt.show()
+
+    # Hedge Portfolio Return
+
+    #Hedge_Return = Factors * Exposures.rename(columns={'beta_Mkt': 'Rm_e'})
+    #Hedge_Return = Hedge_Return.sum(axis=1)
+
+    #Mom_hedge = Momentum.set_index('date') - Hedge_Return.to_numpy()[:, np.newaxis]
+    #print('Momentum-Hedged Return: ', Mom_hedge.mean() * 12)
+    #print('Momentum-Hedged Std: ', Mom_hedge.std() * np.sqrt(12))
+    #print('Momentum-Hedged Sharpe: ', Mom_hedge.mean() / Mom_hedge.std() * np.sqrt(12))
