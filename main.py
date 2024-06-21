@@ -5,7 +5,7 @@ from BaB import run_bab_part3
 from Momentum import run_mom_part4
 from IV import run_iv_part5
 from STRAT import run_strat_part6
-#from Industry_Neutral import run_in_part8
+from Industry_Neutral import run_in_part8
 
 import os
 
@@ -61,13 +61,14 @@ def main():
     all_returns['IV'] = returns_IV
     
     # 4 STRAT
+    print(SEP, SEP, SEP, SEP)
     print(f"{SEP} Running STRAT {SEP}")
     data_STRAT_RP = run_strat_part6(data, returns_BAB, returns_MOM, returns_IV, question_a=True, question_b=True, show_plot = False, verbose=True)
     ### In data_STRAT_RP, you can fetch: rBABstd, rMOMstd, rIVstd, rSTRAT (the weighted average of the strats), rSTRATstd, rFUND_RP
 
     # 8 Industry Neutral
-    #print(f"{SEP} Running Industry Neutral {SEP}")
-    #returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
+    print(f"{SEP} Running Industry Neutral {SEP}")
+    returns_IN = run_in_part8(data, question_a=True, question_b=False, save_tables=False, verbose=True)
 
     
     # print(all_returns.items())
