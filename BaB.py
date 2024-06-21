@@ -23,38 +23,13 @@ def bab_prepare_data(data_betas):
 
 def bab_equally_weighted_portfolios(data_betas):
 
-    # # Create deciles based on Beta value (code from PS5)
-    # data_betas["EW_monthly_decile"] = data_betas.groupby("date")["beta"].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
-
-    # Equally weighted returns per month, for each decile
-    # EW_returns = data_betas.groupby(["date", "decile"]).agg({
-    #     'ret': 'mean',
-    #     RF_COL: 'first',
-    #     'decile': 'first',
-    #     'date': 'first'
-    #     }).reset_index(drop=True)
-
     EW_returns = compute_equal_weight_data(data_betas, col_ret='ret', col_decile='decile')
-
-    # print("Equally weighted returns per month, for each decile:")
-    # print(EW_returns.head(5))
 
     return EW_returns
 
 def bab_value_weighted_portfolios(data_betas):
 
-    # data_betas['VW_weight'] = data_betas.groupby(['date', 'EW_monthly_decile'])['mcap'].transform(lambda x: x / x.sum())
-    # data_betas['VW_ret_contrib'] = data_betas['VW_weight'] * data_betas['ret']
-
-    # VW_returns = data_betas.groupby(["date", "decile"]).agg({
-    #     'VW_ret_contrib': 'sum',
-    #     RF_COL: 'first',
-    #     'decile': 'first',
-    #     'date': 'first'
-    #     }).reset_index(drop=True).rename(columns={'VW_ret_contrib': 'ret'})
     VW_returns = compute_value_weighted_data(data_betas, col_ret = 'VW_ret_contrib', col_decile = 'decile').rename(columns={'VW_ret_contrib': 'ret'})
-    # print("Value weighted returns per month, for each decile:")
-    # print(VW_returns.head(5))
 
     return VW_returns
 
@@ -111,8 +86,8 @@ def bab_question_b(data_betas, verbose = VERBOSE):
         print(VW_returns.shape)
 
     # Plot the results for the 2 different weightings
-    plot_mean_std_sr(EW_returns, '3b', "EW_returns_BAB")
-    plot_mean_std_sr(VW_returns, '3b', "VW_returns_BAB")
+    # plot_mean_std_sr(EW_returns, '3b', "EW_returns_BAB")
+    # plot_mean_std_sr(VW_returns, '3b', "VW_returns_BAB")
 
     return EW_returns, VW_returns
 
@@ -121,14 +96,9 @@ def bab_question_cd(data_betas, verbose = VERBOSE):
     # Create the weights rBAB
     data_BAB = bab_get_portfolio_weights(data_betas)
 
-    if verbose:
-        print("Data BAB portfolio:")
-        print(data_BAB.head(15))
-        print(data_BAB.shape)
-
     return data_BAB
 
-def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, save_tables = True, verbose = VERBOSE):
+def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, show_plot = True, save_tables = True, verbose = VERBOSE):
     """ Run all the part 3, about the Betting-Against-Beta strategy."""
 
     returns = dict()
@@ -138,18 +108,42 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sa
 
     if question_a:
         data = compute_rolling_betas(data)
+        returns['BAB_question_a_data'] = data.copy(deep = True)
 
     if question_b:
+        
+        returns_qb = dict()
+        
         data = bab_prepare_data(data)
         EW_returns, VW_returns = bab_question_b(data, verbose = verbose)
+
+        if show_plot:
+            plot_mean_std_sr(EW_returns, '3b', "EW_returns_BAB")
+            plot_mean_std_sr(VW_returns, '3b', "VW_returns_BAB")
+
+        returns_qb['BAB_EW_returns_data'] = EW_returns.copy(deep = True)
+        returns_qb['BAB_VW_returns_data'] = VW_returns.copy(deep = True)
+
+
         if save_tables:
             EW_returns.to_csv("Tables/3_BAB_qb_EW_return.csv", sep = ";")
             VW_returns.to_csv("Tables/3_BAB_qb_VW_return.csv", sep = ";")
-        returns['BAB_qb_EW_returns'] = EW_returns.copy(deep = True)
-        returns['BAB_qb_VW_returns'] = VW_returns.copy(deep = True)
+
+        returns['BAB_question_b'] = returns_qb
 
     if question_cd:
+        
+        returns_qc = dict()
+
         bab_strategy = bab_question_cd(data, verbose = verbose)
+
+        returns_qc['BAB_qc_strategy_data'] = bab_strategy.copy(deep = True)
+
+        if verbose: 
+            print("Data BAB portfolio:")
+            print(bab_strategy.head(15))
+            print(bab_strategy.shape)
+
         if save_tables:
             bab_strategy.to_csv("Tables/3_BAB_qcd.csv", sep = ";")
         
@@ -165,14 +159,16 @@ def run_bab_part3(data, question_a=True, question_b = True, question_cd=True, sa
         bab_strategy['one'] = 1 # Create the column for the constant
         model = sm.OLS(bab_strategy['rBAB'], bab_strategy[['one', 'Rm_e']]).fit() # Fit CAPM
 
-        print("\n-----------------------\nBetting-against-beta strategy")
-        print(" - Mean return: {:.2f}".format(BAB_ret))
-        print(" - Standard deviation: {:.2f}".format(BAB_std))
-        print(" - Sharpe ratio: {:.2f}".format(BAB_shr))
-        print(" - CAPM alpha: {:.2f}".format(model.params.iloc[0] * 12))
+        if verbose: 
+            print("\n-----------------------\nBetting-against-beta strategy")
+            print(" - Mean return: {:.2f}".format(BAB_ret))
+            print(" - Standard deviation: {:.2f}".format(BAB_std))
+            print(" - Sharpe ratio: {:.2f}".format(BAB_shr))
+            print(" - CAPM alpha: {:.2f}".format(model.params.iloc[0] * 12))
 
         performances_bab = {'mean': BAB_ret, 'std': BAB_std, 'sharpe': BAB_shr, 'alpha': model.params.iloc[0] * 12, 'rf': rf}
-
-        returns['BAB_qcd_strategy'] = performances_bab
+        returns_qc['BAB_qc_strategy_perf'] = performances_bab
+        
+        returns['BAB_question_cd'] = returns_qc
 
     return returns

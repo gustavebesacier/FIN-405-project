@@ -30,7 +30,6 @@ def iv_compute_idio_vol(data_iv):
     
     return data_iv
 
-
 def iv_question_b_ew(data, verbose=VERBOSE): # OK NO TOUCH BB
 
     EW_iv_piv = compute_equal_weight_data(data, col_ret='ret', col_decile='decile')
@@ -105,7 +104,6 @@ def iv_question_c_vw_compare_legs_to_strat(data):
 
     return IV_vw_perf, performance_iv_ew
 
-
 def iv_question_c_ew(data, show_plot = True):
         # Comparing performance of each leg
         EW_returns_IV_legs = data.groupby(["date", "leg"]).agg({
@@ -144,7 +142,6 @@ def iv_question_c_ew(data, show_plot = True):
 
         return EW_iv_piv, performance_iv_ew
 
-
 def iv_question_c_vw(data, verbose = VERBOSE, show_plot = True):
         
         VW_iv_piv = compute_vw_from_legs_data(data, col_ret='ret', col_leg='leg', col_mcap='mcap')
@@ -172,13 +169,17 @@ def iv_question_c_vw(data, verbose = VERBOSE, show_plot = True):
             plot.suptitle(f'Average portolio annualized mean return, standard deviation and sharpe ratio (VW_IV_legs_strat)')
             plot.savefig(f"Figures/question_5c_plot_VW_IV_legs_strat")
             plot.show()
-            print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")       
-
+            print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy") 
+        
+        return
 
 def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show_plot = True, verbose=VERBOSE):
     """ Run all the part 5, about the Idiosyncratic volatility strategy."""
+
+    returns_iv = dict()
     
     data = iv_prepare_data(data).copy()
+
 
     if question_a:
         print(f"{SEP}\nQuestion a")
@@ -187,11 +188,16 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         if verbose:
             print(data.head(15))
             print(data.shape)
+
+        returns_iv['IV_question_a'] = data.copy(deep = True)
         
         # Anticipate the next questions and avoid issues: create the deciles
         data['decile'] = data.groupby("date")["IV"].transform(lambda x: pd.qcut(x, 10, labels=False, duplicates='drop'))
 
     if question_b:
+        
+        returns_qb = dict()
+
         print(f"{SEP}\nQuestion b")
         if not question_a:
             raise ValueError("You need to run question a before question b in the IV strategy.")
@@ -205,8 +211,17 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
             plot_mean_std_sr(EW_iv_piv, '5b', "EW_returns_IV")
             plot_mean_std_sr(VW_iv_piv, '5b', "VW_returns_IV")
         
+        returns_qb['IV_question_b_EW_returns'] = EW_iv_piv.copy(deep = True)
+        returns_qb['IV_question_b_VW_returns'] = VW_iv_piv.copy(deep = True)
+
+        returns_iv['IV_question_b'] = returns_qb# .copy(deep = True)
+
     if question_c:
         """Construct the idiosyncratic volatility factor."""
+
+        print(f"{SEP}\nQuestion c")
+
+        returns_question_c = dict()
 
         if not question_a: # to make sure we have the correct data
             raise ValueError("You need to run question a before question c in the IV strategy.")
@@ -215,15 +230,22 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         data = mom_add_legs(data)
         data = data.dropna().copy()
 
-
         ## Equally weighted strategy
         # Compare each leg performance
         EW_iv_piv_leg = iv_question_c_ew_compare_legs(data)
+        returns_question_c['IV_question_c_EW_returns_data'] = EW_iv_piv_leg.copy(deep = True)
+
 
         # Compare the performance of the strategy with the performance of each leg
         IV_ew_perf, performance_iv_ew = iv_question_c_ew_compare_legs_to_strat(data, show_plot = show_plot, verbose = True)
         # >>> performance_iv_ew = {'mean': 0.14420259964496035, 'std': 0.15926215094897586, 'sharpe': 0.6502576906002339, 'rf': 0.040641161168853454, 'n': 211}
-        print(IV_ew_perf, performance_iv_ew)
+        if verbose:
+            print("Data and performance of the IV strategy using EW portoflios.")
+            print(IV_ew_perf)
+            print(performance_iv_ew)
+        returns_question_c['IV_question_c_EW_long_short_data'] = IV_ew_perf.copy(deep = True)
+        returns_question_c['IV_question_c_EW_long_short_perf'] = performance_iv_ew#.copy(deep = True)
+
         if show_plot:
             mean, std, sr = get_mean_std_sharpe(EW_iv_piv_leg.rename(columns={'leg': 'decile'}))
             mean.append(performance_iv_ew['mean']), std.append(performance_iv_ew['std']), sr.append(performance_iv_ew['sharpe'])
@@ -236,6 +258,7 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         ## Value weighted strategy
         # Compare each leg's performance
         VW_iv_piv_leg = iv_question_c_vw_compare_legs(data)
+        returns_question_c['IV_question_c_VW_returns_data'] = VW_iv_piv_leg.copy(deep = True)
 
         if show_plot:
             plot_mean_std_sr(VW_iv_piv_leg.rename(columns={'leg': 'decile', 'VW_ret':'ret'}), '5c', "VW_returns_IV_legs")
@@ -243,11 +266,15 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
 
         # Compare the performance of the strategy with the performance of each leg
         IV_vw_perf, performance_iv_vw = iv_question_c_vw_compare_legs_to_strat(data)
+        returns_question_c['IV_question_c_VW_long_short_data'] = IV_vw_perf.copy(deep = True)
+        returns_question_c['IV_question_c_VW_long_short_perf'] = performance_iv_vw#.copy(deep = True)
+
         if verbose:
+            print("Data and performance of the IV strategy using EW portoflios.")
             print(IV_vw_perf)
             print(performance_iv_vw)
 
-        if True:
+        if show_plot:
             mean, std, sr = get_mean_std_sharpe(EW_iv_piv_leg.rename(columns={'leg': 'decile'}))
             mean.append(performance_iv_vw['mean']), std.append(performance_iv_vw['std']), sr.append(performance_iv_vw['sharpe'])
             plot = plot_from_lists(mean, std, sr, plot_color = 'blue')
@@ -256,7 +283,9 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
             plot.show()
             print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
 
-
+        # Add the returns to the dict of returns
+        returns_iv['IV_question_c'] = returns_question_c#.copy(deep = True)
+        
 
 
         # # Equally weighted strategy
@@ -301,4 +330,4 @@ def run_iv_part5(data, question_a=True, question_b=True, question_c = True, show
         # print("Bar 0: leg -1; Bar 1: leg 1; Bar 2: Strategy")
 
 
-    return data
+    return returns_iv
